@@ -4,20 +4,19 @@
 #
 # - xmaxima.exe
 # - winkill.exe
-# - tclwinkill.dll
-prefix=@prefix@
-TCLKITSH = tclkitsh-win32.upx.exe
-TCLKITDIR = ../../../../programs/star
-SDXDIR = $(TCLKITDIR)
-GNUPLOTDIR = ../../../../programs/gnuplot
-WXMAXIMADIR = ../../../../programs/wxMaxima
+# - winkill_lib.dll
 
-GCCPREFIX=/mingw
-GCCVER=3.3.1
+prefix=@prefix@
+OPENMCL_NAME=@OPENMCL_NAME@
+TCLKITSH = tclkitsh-win32.upx.exe
+TCLKITDIR = ~/programs/star
+SDXDIR = $(TCLKITDIR)
+GNUPLOTDIR = ~/programs/gnuplot
+WXMAXIMADIR = ~/programs/wxMaxima
 
 CHMLANGS = es pt pt_BR
 
-all: xmaxima.exe winkill.exe tclwinkill.dll
+all: xmaxima.exe winkill.exe winkill_lib.dll
 
 ../xmaxima: 
 	(cd ..; $(MAKE) xmaxima)
@@ -30,7 +29,7 @@ xmaxima.exe: xmaxima.tcl
 	rm -rf img.vfs
 	$(TCLKITDIR)/$(TCLKITSH) $(SDXDIR)/sdx.kit qwrap xmaxima.tcl && \
 	$(TCLKITDIR)/$(TCLKITSH) $(SDXDIR)/sdx.kit unwrap xmaxima.kit && \
-	$(TCLKITDIR)/$(TCLKITSH) $(SDXDIR)/sdx.kit unwrap $(SDXDIR)/img.kit && \
+	$(TCLKITDIR)/$(TCLKITSH) $(SDXDIR)/sdx.kit unwrap "$(SDXDIR)/img.kit" && \
 	cp -r img.vfs/lib/Img xmaxima.vfs/lib && \
 	$(TCLKITDIR)/$(TCLKITSH) $(SDXDIR)/sdx.kit wrap xmaxima.exe \
 	-runtime $(TCLKITDIR)/tclkit-win32.upx.exe xmaxima.kit
@@ -38,42 +37,13 @@ xmaxima.exe: xmaxima.tcl
 winkill.exe: winkill.c
 	gcc -Wall -o winkill.exe winkill.c
 
-tclwinkill.dll: tclwinkill.c
-	gcc -Wall -shared tclwinkill.c -ltclstub84 -o tclwinkill.dll
+winkill_lib.dll: winkill_lib.c
+	gcc -Wall  -shared winkill_lib.c -o winkill_lib.dll
 
-gcccopy:
+cclcopy:
 	test -d "$(prefix)/bin" || mkdir -p "$(prefix)/bin"
-	test -d "$(prefix)/include" || mkdir -p "$(prefix)/include"
-	test -d "$(prefix)/include/sys" || mkdir -p "$(prefix)/include/sys"
-	test -d "$(prefix)/lib/gcc-lib/mingw32/$(GCCVER)" \
-		|| mkdir -p "$(prefix)/lib/gcc-lib/mingw32/$(GCCVER)"
-	test -d "$(prefix)/lib/gcc-lib/mingw32/$(GCCVER)/include" \
-		|| mkdir -p "$(prefix)/lib/gcc-lib/mingw32/$(GCCVER)/include"
-	cp $(GCCPREFIX)/bin/gcc.exe $(prefix)/bin
-	cp $(GCCPREFIX)/bin/mingwm10.dll $(prefix)/bin
-	cp $(GCCPREFIX)/bin/tclpip84.dll $(prefix)/bin
-	cp $(GCCPREFIX)/include/stdio.h $(prefix)/include
-	cp $(GCCPREFIX)/include/stdlib.h $(prefix)/include
-	cp $(GCCPREFIX)/include/varargs.h $(prefix)/include
-	cp $(GCCPREFIX)/include/setjmp.h $(prefix)/include
-	cp $(GCCPREFIX)/include/stddef.h $(prefix)/include
-	cp $(GCCPREFIX)/include/_mingw.h $(prefix)/include
-	cp $(GCCPREFIX)/include/math.h $(prefix)/include
-	cp $(GCCPREFIX)/include/unistd.h $(prefix)/include
-	cp $(GCCPREFIX)/include/io.h $(prefix)/include
-	cp $(GCCPREFIX)/include/process.h $(prefix)/include
-	cp $(GCCPREFIX)/include/getopt.h $(prefix)/include
-	cp $(GCCPREFIX)/include/stdint.h $(prefix)/include
-	cp $(GCCPREFIX)/include/sys/*.h $(prefix)/include/sys
-	cp $(GCCPREFIX)/lib/gcc-lib/mingw32/$(GCCVER)/cc1.exe \
-		$(prefix)/lib/gcc-lib/mingw32/$(GCCVER)
-	cp $(GCCPREFIX)/bin/as.exe \
-		$(prefix)/lib/gcc-lib/mingw32/$(GCCVER)
-	cp $(GCCPREFIX)/lib/gcc-lib/mingw32/$(GCCVER)/specs  \
-		$(prefix)/lib/gcc-lib/mingw32/$(GCCVER)
-	cp $(GCCPREFIX)/lib/gcc-lib/mingw32/$(GCCVER)/include/*.h  \
-		$(prefix)/lib/gcc-lib/mingw32/$(GCCVER)/include
-
+	cp "$(OPENMCL_NAME)" "$(prefix)/bin/wx86cl.exe"
+	
 # Install the gnuplot binary files in bin
 gnuplot: 
 	mkdir -p $(prefix)/gnuplot
@@ -113,10 +83,7 @@ fixes: fix_maxima_bat
 # Installed maxima.bat must have DOS line termination on win9x
 fix_maxima_bat: 
 		unix2dos "@prefix@/bin/maxima.bat"
-		rm -f "@prefix@/bin/foo.bat" 2> /dev/null
-		sed -e 's|GCCVER|$(GCCVER)|g' < "@prefix@/bin/maxima.bat" > "@prefix@/bin/foo.bat"
-		mv -f "@prefix@/bin/foo.bat" "@prefix@/bin/maxima.bat"
 
-install: xmaxima.exe winkill.exe tclwinkill.dll gnuplot wxmaxima chm fixes
-	cp xmaxima.exe winkill.exe tclwinkill.dll "@prefix@/bin"
+install: xmaxima.exe winkill.exe winkill_lib.dll gnuplot wxmaxima chm fixes
+	cp xmaxima.exe winkill.exe winkill_lib.dll win_signals.lisp "@prefix@/bin"
 	cp readme*.txt "@prefix@"

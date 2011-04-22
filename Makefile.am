@@ -9,7 +9,6 @@ EXTRA_DIST = \
   README.lisps README.rpms README.i18n README.external \
   INSTALL.win32 INSTALL.lisp \
   configure.lisp  maxima-local.in xmaxima-local.in \
-  macosx/Makefile macosx/Readme.txt macosx/maxima.sh macosx/script \
   ChangeLog-5.9.2 ChangeLog-5.9.3 ChangeLog-5.10.0 ChangeLog-5.11.0 \
   ChangeLog-5.12.0 ChangeLog-5.13.0 ChangeLog-5.14.0 ChangeLog-5.15.0 \
   ChangeLog-5.16 ChangeLog-5.17 ChangeLog-5.17-special-functions \
@@ -29,7 +28,7 @@ $(distdir).tar.gz: Makefile.am
 	$(MAKE) dist
 
 iss: extradocinstall
-	$(MAKE) -C interfaces/xmaxima/win32 gcccopy install
+	$(MAKE) -C interfaces/xmaxima/win32 cclcopy install
 
 # Build the Maxima rpms. Optionally, use
 #     make rpm SUDO=sudo
