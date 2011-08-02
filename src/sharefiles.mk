@@ -155,6 +155,9 @@ contrib/amatrix/rtest_amatrix.mac \
 contrib/amatrix/rtest_wilcoxon.mac \
 contrib/amatrix/wilcoxon.mac \
 contrib/augmented_lagrangian.mac \
+contrib/bernstein/bernstein.lisp \
+contrib/bernstein/bernstein_utilities.mac \
+contrib/bernstein/rtest_bernstein.mac \
 contrib/bitwise/bitwise.lisp \
 contrib/bitwise/bitwise_specification.txt \
 contrib/bitwise/rtest_bitwise.mac \
@@ -225,7 +228,9 @@ contrib/diffequations/tests/testsuite.lisp \
 contrib/distrib/distrib.mac \
 contrib/distrib/numdistrib.lisp \
 contrib/distrib/rtest_distrib.mac \
+contrib/ezunits/ezunits_db.mac \
 contrib/ezunits/ezunits.dem \
+contrib/ezunits/ezunits_functions.mac \
 contrib/ezunits/ezunits.lisp \
 contrib/ezunits/ezunits.mac \
 contrib/ezunits/physical_constants.mac \
@@ -738,6 +743,7 @@ lapack/blas/ztrmv.lisp \
 lapack/blas/ztrsm.lisp \
 lapack/blas/ztrsv.lisp \
 lapack/dgemm.lisp \
+lapack/dgeqrf.lisp \
 lapack/dgesv.lisp \
 lapack/eigensys.lisp \
 lapack/lapack/dbdsdc.lisp \
@@ -843,6 +849,7 @@ lapack/lapack.system \
 lapack/lapack/zlange.lisp \
 lapack/lapack/zlassq.lisp \
 lapack/load-lapack.lisp \
+lapack/rtest_dgeqrf.mac \
 lbfgs/f2cl-lbfgs.lisp \
 lbfgs/lb1.lisp \
 lbfgs/lb2.lisp \
@@ -1133,6 +1140,7 @@ utils/mactex-utilities.lisp \
 vector/rtest_vect.mac \
 vector/vect.dem \
 vector/vect.mac \
+vector/vect.mac.orig \
 vector/vector.dem \
 vector/vector.mac \
 vector/vector_rebuild.lisp \

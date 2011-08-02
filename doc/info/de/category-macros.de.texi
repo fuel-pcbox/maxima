@@ -2,10 +2,10 @@
 @c File        : category-macros.de.texi
 @c License     : GNU General Public License (GPL)
 @c Language    : German
-@c Original    : category-macros.texi revision 1.4
+@c Original    : category-macros.texi revision 30.05.2011
 @c Translation : Dr. Dieter Kaiser
 @c Date        : 15.10.2010
-@c Revision    : 08.04.2011
+@c Revision    : 29.06.2011
 @c 
 @c This file is part of Maxima -- GPL CAS based on DOE-MACSYMA
 @c -----------------------------------------------------------------------------
@@ -53,13 +53,21 @@
 @end ifnothtml
 @end macro
 
-
 @macro mrefdot {nodename}
 @ifhtml
 @code{@ref{\nodename\}}.
 @end ifhtml
 @ifnothtml
 @code{\nodename\}.
+@end ifnothtml
+@end macro
+
+@macro mxrefdot {nodename, text}
+@ifhtml
+@code{@ref{\nodename\, \text\}}.
+@end ifhtml
+@ifnothtml
+@code{\text\}.
 @end ifnothtml
 @end macro
 
@@ -116,11 +124,13 @@
              Ar-gu-ment
              Ar-gu-men-ten
              a-rith-me-ti-schen
+             Ar-kus-ko-tan-gens
              auf-ge-ru-fen
              Aus-drucks
              aus-ge-wer-tet
              Aus-wer-tung
              be-rech-net
+             be-stimm-tes
              be-zeich-net
              Da-ten-bank
              de-fi-nier-ten
@@ -129,15 +139,19 @@
              ein-ge-schlos-sen
              E-le-men-te
              ent-hal-ten
+             ent-spre-chend
              Er-geb-nis
              Ex-po-nen-tial-funk-tion
              Fra-ge-zei-chen
+             Fres-nel-funk-tion
              Funk-tion
              ge-kenn-zeich-net
              ge-ne-riert
              ge-spei-chert
              Glei-chung
              Glei-chung-en
+             Glei-chungs-sys-tem
+             Glei-chungs-sys-tems
              Gleit-kom-ma-zah-len
              Glo-ba-le
              Gnuplot
@@ -147,10 +161,12 @@
              Hilfs-pro-gram-me
              In-for-ma-tio-nen
              In-te-gra-tions-in-ter-valls
+             In-te-gra-tions-va-ri-ab-le
              Iso-li-nien
              ka-no-ni-scher
              Kon-stan-te
              Ko-or-di-na-ten-sys-tem
+             Laplace-trans-for-ma-tion
              letz-te
              ma-the-ma-ti-sche
              Maxima

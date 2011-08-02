@@ -87,24 +87,21 @@ Maxima infrastructure
 * Introduction to Maxima::      Sample Maxima sessions.
 * Bug Detection and Reporting:: Finding and reporting bugs in Maxima.
 * Help::                        Asking for help from within a Maxima session.
-* Command Line::                Maxima command line syntax.
-* Operators::                   Operators used in Maxima expressions.
+* Command Line::                Maxima command line syntax, Input, and Output.
+* Data Types and Structures::   Numbers, Strings, Lists, Arrays, and Structures.
 * Expressions::                 Expressions in Maxima.
+* Operators::                   Operators used in Maxima expressions.
+* Evaluation::                  Evaluating expressions.
 * Simplification::              Simplifying expressions.
+* Mathematical Functions::      Mathematical functions in Maxima.
+* Maximas Database::            Declarations, Contexts, Facts, and Properties.
 * Plotting::                    2D and 3D graphical output.
-* Input and Output::            File input and output.
-* Floating Point::              Low level numerical routines.
-* Contexts::                    Sets of assumed facts.
+* File Input and Output::       File input and output.
 
 Support for specific areas of mathematics
 
 * Polynomials::                 Standard forms for polynomials, and
                                 functions operating on them.
-* Constants::                   Numerical constants.
-* Logarithms::                  Manipulation of expressions involving
-                                logarithms.
-* Trigonometric::               Manipulating expressions with trig and
-                                inverse trig functions.
 * Special Functions::           Special functions
 * Elliptic Functions::          Elliptic Functions and Integrals
 * Limits::                      Limits of expressions.
@@ -114,13 +111,12 @@ Support for specific areas of mathematics
 * Differential Equations::      Defining and solving differential equations.
 * Numerical::                   Numerical integration, Fourier
                                 transforms, etc.
-* Arrays::                      Creating and working with arrays.
 * Matrices and Linear Algebra:: Matrix operations.
 * Affine::                      
 * itensor::                     Indicial Tensor Manipulation.
 * ctensor::                     Component Tensor Manipulation.
 * atensor::                     Algebraic Tensor Manipulation.
-* Series::                      Taylor and power series.
+* Sums Products and Series::    Sums, Products, Taylor and power series.
 * Number Theory::               Number theory.
 * Symmetries::                  
 * Groups::                      Abstract algebra.
@@ -131,9 +127,7 @@ Advanced facilities and programming
 * Miscellaneous Options::       Options with a global effect on Maxima.
 * Rules and Patterns::          User defined pattern matching and
                                 simplification rules.
-* Lists::                       Manipulation of lists.
 * Sets::                        Manipulation of sets.
-* Structures::                  Aggregated data.
 * Function Definition::         Defining functions.
 * Program Flow::                Defining Maxima programs.
 * Debugging::                   Debugging Maxima programs.
@@ -142,6 +136,7 @@ Additional packages
 
 * asympa::                      Asymptotic analysis package
 * augmented_lagrangian::        augmented_lagrangian package.
+* Bernstein::                   Bernstein polynomials.
 * bode::                        Bode gain and phase plots.
 * cobyla::                      Nonlinear optimization with inequality constraints.
 * contrib_ode::                 Additional routines for ODEs
@@ -180,6 +175,7 @@ Additional packages
 * stats::                       Statistical inference package.
 * stirling::                    Stirling formula.
 * stringproc::                  String processing.
+* to_poly_solve::               to_poly_solve package.
 * unit::                        Units and dimensions package.
 * zeilberger::                  Functions for hypergeometric summation.
 
@@ -201,37 +197,65 @@ Bugs
 
 Help
 
-* Lisp and Maxima::            
-* Garbage Collection::          
-* Documentation::               
-* Functions and Variables for Help::        
+* Documentation::
+* Functions and Variables for Help::
 
 Command Line
 
-* Introduction to Command Line::  
-* Functions and Variables for Command Line::  
+* Introduction to Command Line::
+* Functions and Variables for Command Line::
+* Functions and Variables for Display::
 
-Operators
+Data Types and Structures
 
-* nary::                        
-* nofix::                       
-* postfix::                     
-* prefix::                      
-* Arithmetic operators::    
-* Relational operators::   
-* General operators::
+* Numbers::
+* Strings::
+* Constants::
+* Lists::
+* Arrays::
+* Structures::
 
 Expressions
 
-* Introduction to Expressions::  
-* Complex::                     
-* Inequality::                  
-* Syntax::                      
-* Functions and Variables for Expressions::  
+* Introduction to Expressions::
+* Nouns and Verbs::
+* Identifiers::
+* Inequality::
+* Functions and Variables for Expressions::
+
+Operators
+
+* Introduction to operators::
+* Arithmetic operators::
+* Relational operators::
+* Logical operators::
+* Operators for Equations::
+* Assignment operators::
+* User defined operators::
+
+Evaluation
+
+* Functions and Variables for Evaluation::
 
 Simplification
 
-* Functions and Variables for Simplification::  
+* Functions and Variables for Simplification::
+
+Mathematical Functions
+
+* Functions for Numbers::
+* Functions for Complex Numbers::
+* Combinatorial Functions::
+* Root Exponential and Logarithmic Functions::
+* Trigonometric Functions::
+* Random Numbers::
+
+Maximas Database
+
+* Introduction to Maximas Database::
+* Functions and Variables for Properties::
+* Functions and Variables for Facts::
+* Functions and Variables for Predicates::
 
 Plotting
 
@@ -242,37 +266,16 @@ Plotting
 * Gnuplot Options::
 * Gnuplot_pipes Format Functions::
 
-Input and Output
+File Input and Output
 
 * Comments::
 * Files::                       
-* Functions and Variables for Input and Output::  
-
-Floating Point
-
-* Functions and Variables for Floating Point::  
-
-Contexts
-
-* Functions and Variables for Contexts::    
+* Functions and Variables for File Input and Output::
 
 Polynomials
 
 * Introduction to Polynomials::  
-* Functions and Variables for Polynomials::  
-
-Constants
-
-* Functions and Variables for Constants::   
-
-Logarithms
-
-* Functions and Variables for Logarithms::  
-
-Trigonometric
-
-* Introduction to Trigonometric::  
-* Functions and Variables for Trigonometric::  
+* Functions and Variables for Polynomials::
 
 Special Functions
 
@@ -322,10 +325,6 @@ Numerical
 * Introduction to Fourier series::
 * Functions and Variables for Fourier series::
 
-Arrays
-
-* Functions and Variables for Arrays::  
-
 Matrices and Linear Algebra
 
 * Introduction to Matrices and Linear Algebra::  
@@ -354,10 +353,12 @@ atensor
 * Introduction to atensor::     
 * Functions and Variables for atensor::     
 
-Series
+Sums, Products, and Series
 
-* Introduction to Series::      
-* Functions and Variables for Series::      
+* Sums and Products::
+* Introduction to Series::
+* Functions and Variables for Series::
+* Poisson series::
 
 Number Theory
 
@@ -387,22 +388,12 @@ Miscellaneous Options
 Rules and Patterns
 
 * Introduction to Rules and Patterns::  
-* Functions and Variables for Rules and Patterns::  
-
-Lists
-
-* Introduction to Lists::       
-* Functions and Variables for Lists::       
+* Functions and Variables for Rules and Patterns::
 
 Sets
 
 * Introduction to Sets::       
-* Functions and Variables for Sets::       
-
-Structures
-
-* Introduction to Structures::       
-* Functions and Variables for Structures::       
+* Functions and Variables for Sets::
 
 Function Definition
 
@@ -413,6 +404,8 @@ Function Definition
 
 Program Flow
 
+* Lisp and Maxima::
+* Garbage Collection::
 * Introduction to Program Flow::  
 * Functions and Variables for Program Flow::  
 
@@ -428,6 +421,10 @@ asympa
 augmented_lagrangian
 
 * Functions and Variables for augmented_lagrangian::
+
+Bernstein
+
+* Functions and Variables for Bernstein::
 
 bode
 
@@ -632,6 +629,10 @@ stringproc
 * Functions and Variables for characters::
 * Functions and Variables for strings::
 
+to_poly_solve
+
+* Functions and Variables for to_poly_solve::
+
 unit
 
 * Introduction to Units::       
@@ -662,55 +663,55 @@ zeilberger
 @chapter Help
 @include Help.texi
 
-@node Command Line, Operators, Help, Top
+@node Command Line, Data Types and Structures, Help, Top
 @chapter Command Line
 @include Command.texi
 
-@node Operators, Expressions, Command Line, Top
-@chapter Operators
-@include Operators.texi
+@node Data Types and Structures, Expressions, Command Line, Top
+@chapter Data Types and Structures
+@include DataTypes.texi
+@include Constants.texi
+@include Lists.texi
+@include Arrays.texi
+@include defstruct.texi
 
-@node Expressions, Simplification, Operators, Top
+@node Expressions, Operators, Data Types and Structures, Top
 @chapter Expressions
 @include Expressions.texi
 
-@node Simplification, Plotting, Expressions, Top
+@node Operators, Evaluation, Expressions, Top
+@chapter Operators
+@include Operators.texi
+
+@node Evaluation, Simplification, Operators, Top
+@chapter Evaluation
+@include Evaluation.texi
+
+@node Simplification, Mathematical Functions, Evaluation, Top
 @chapter Simplification
 @include Simplification.texi
 
-@node Plotting, Input and Output, Simplification, Top
+@node Mathematical Functions, Maximas Database, Simplification, Top
+@chapter Mathematical Functions
+@include MathFunctions.texi
+
+@node Maximas Database, Plotting, Mathematical Functions, Top
+@chapter Maximas Database
+@include Database.texi
+
+@node Plotting, File Input and Output, Maximas Database, Top
 @chapter Plotting
 @include Plotting.texi
 
-@node Input and Output, Floating Point, Plotting, Top
-@chapter Input and Output
+@node File Input and Output, Polynomials, Plotting, Top
+@chapter File Input and Output
 @include Input.texi
 
-@node Floating Point, Contexts, Input and Output, Top
-@chapter Floating Point
-@include Floating.texi
-
-@node Contexts, Polynomials, Floating Point, Top
-@chapter Contexts
-@include Contexts.texi
-
-@node Polynomials, Constants, Contexts, Top
+@node Polynomials, Special Functions, File Input and Output, Top
 @chapter Polynomials
 @include Polynomials.texi
 
-@node Constants, Logarithms, Polynomials, Top
-@chapter Constants
-@include Constants.texi
-
-@node Logarithms, Trigonometric, Constants, Top
-@chapter Logarithms
-@include Logarithms.texi
-
-@node Trigonometric, Special Functions, Logarithms, Top
-@chapter Trigonometric
-@include Trigonometric.texi
-
-@node Special Functions, Elliptic Functions, Trigonometric, Top
+@node Special Functions, Elliptic Functions, Polynomials, Top
 @chapter Special Functions
 @include Special.texi
 
@@ -740,15 +741,11 @@ zeilberger
 
 @c @include NonCommutative.texi
 
-@node Numerical, Arrays, Differential Equations, Top
+@node Numerical, Matrices and Linear Algebra, Differential Equations, Top
 @chapter Numerical
 @include Numerical.texi
 
-@node Arrays, Matrices and Linear Algebra, Numerical, Top
-@chapter Arrays
-@include Arrays.texi
-
-@node Matrices and Linear Algebra, Affine, Arrays, Top
+@node Matrices and Linear Algebra, Affine, Numerical, Top
 @chapter Matrices and Linear Algebra
 @include Matrices.texi
 
@@ -764,15 +761,15 @@ zeilberger
 @chapter ctensor
 @include Ctensor.texi
 
-@node atensor, Series, ctensor, Top
+@node atensor, Sums Products and Series, ctensor, Top
 @chapter atensor
 @include Atensor.texi
 
-@node Series, Number Theory, atensor, Top
-@chapter Series
+@node Sums Products and Series, Number Theory, atensor, Top
+@chapter Sums, Products, and Series
 @include Series.texi
 
-@node Number Theory, Symmetries, Series, Top
+@node Number Theory, Symmetries, Sums Products and Series, Top
 @chapter Number Theory
 @include Number.texi
 
@@ -792,23 +789,15 @@ zeilberger
 @chapter Miscellaneous Options
 @include Miscellaneous.texi
 
-@node Rules and Patterns, Lists, Miscellaneous Options, Top
+@node Rules and Patterns, Sets, Miscellaneous Options, Top
 @chapter Rules and Patterns
 @include Rules.texi
 
-@node Lists, Sets, Rules and Patterns, Top
-@chapter Lists
-@include Lists.texi
-
-@node Sets, Structures, Lists, Top
+@node Sets, Function Definition, Rules and Patterns, Top
 @chapter Sets
 @include nset.texi
 
-@node Structures, Function Definition, Sets, Top
-@chapter Structures
-@include defstruct.texi
-
-@node Function Definition, Program Flow, Structures, Top
+@node Function Definition, Program Flow, Sets, Top
 @chapter Function Definition
 @include Function.texi
 
@@ -824,11 +813,15 @@ zeilberger
 @chapter asympa
 @include asympa.texi
 
-@node augmented_lagrangian, bode, asympa, Top
+@node augmented_lagrangian, Bernstein, asympa, Top
 @chapter augmented_lagrangian
 @include augmented_lagrangian.texi
 
-@node bode, cobyla, augmented_lagrangian, Top
+@node Bernstein, bode, augmented_lagrangian, Top
+@chapter Bernstein
+@include bernstein.texi
+
+@node bode, cobyla, Bernstein, Top
 @chapter bode
 @include bode.texi
 
@@ -976,11 +969,15 @@ zeilberger
 @chapter stirling
 @include stirling.texi
 
-@node stringproc, unit, stirling, Top
+@node stringproc, to_poly_solve, stirling, Top
 @chapter stringproc
 @include stringproc.texi
 
-@node unit, zeilberger, stringproc, Top
+@node to_poly_solve, unit, stringproc, Top
+@chapter to_poly_solve
+@include to_poly_solve.texi
+
+@node unit, zeilberger, to_poly_solve, Top
 @chapter unit
 @include unit.texi
 

@@ -165,7 +165,7 @@ string ('"+"(a, b, '"."(c, d), '"^"(e, f)));
 
 /* Bug 626697 */
 limit(atan2(y,x),y,minf);
--'limit(atan2(y,x),y,inf);
+'limit(atan2(y,x),y,minf);
 
 /* Bug 1548643 */
 limit(abs(sqrt(1-1/x)-1),x,0);
@@ -1504,6 +1504,15 @@ closeto(zeta(3)-1.202056903159594,1e-15), numer:true;
 true;
 closeto(zeta(3+%i)-(1.10721440843141 - .1482908671781754*%i), 1e-15);
 true;
+/*
+ * Reported on mailing list 2011-05-22 by Thomas Dean:
+ *
+ * plot2d(abs(zeta(1/2+x*%i)),[x,0,36]) causes a Lisp error with
+ * clisp.
+ *
+ */
+closeto(abs(zeta(1/2+.5*%i)) - 1.06534921249378, 1e-14);
+true;
 
 /* Bug ID: 2997401 - float(log(200!)) produces an error
  *
@@ -1899,3 +1908,201 @@ a+b;
  */
 exp(gamma(1/3)),bfloat;
 1.45696199392313b1;
+
+/* Bug ID: 3288989 - Lisp functions and linear display
+ * Show that we do not get a Lisp error.
+ */
+grind(?cdr([a,b,c]));
+done;
+
+/* Bug ID: 3291590 - Problems with fast arrays
+ */
+(a:make_array(hashed), done);
+done;
+a[100]:100;
+100;
+a[x]:sin(x);
+sin(x);
+a[x*y]:x^2+y;
+y+x^2;
+
+/* Cutting out these two examples.
+ * The ordering of the lists is different depending on the underlying Lisp.
+ *
+ * arrayinfo(a);
+ * [hash_table,1,100,x,x*y];
+ * listarray(a);
+ * [100,sin(x),y+x^2];
+ */
+
+(f:make_array(functional, 'factorial, hashed), done);
+done;
+f[10];
+3628800;
+
+(a: make_array(fixnum, 2, 2), done);
+done;
+listarray(a);
+[0, 0, 0, 0];
+
+use_fast_arrays:true;
+true;
+
+(array(a, any, 2, 2), done);
+done;
+arrayinfo(a);
+[declared, 2, [2, 2]];
+(array(a, fixnum, 2, 2), done);
+done;
+arrayinfo(a);
+[declared, 2, [2, 2]];
+(array(a, flonum, 2, 2), done);
+done;
+arrayinfo(a);
+[declared, 2, [2, 2]];
+(array(a, hashed), done);
+done;
+arrayinfo(a);
+[hash_table, 1];
+
+reset(use_fast_arrays);
+[use_fast_arrays];
+kill(a);
+done;
+
+/* Bug ID: 3247367 - expand returns unsimplified
+ */
+sqrt(2)+sqrt(2);
+2^(3/2);
+sqrt(2)+sqrt(2)+sqrt(2);
+3*sqrt(2);
+sqrt(2)+sqrt(2)+sqrt(2)+sqrt(2);
+2^(5/2);
+sqrt(2)+sqrt(2)+sqrt(2)+sqrt(2)+sqrt(2);
+5*sqrt(2);
+
+2*sqrt(2)+3*sqrt(2);
+5*sqrt(2);
+3*sqrt(2)+2*sqrt(2);
+5*sqrt(2);
+3*sqrt(2)+2*sqrt(2)+sqrt(2);
+3*2^(3/2);
+sqrt(2)+3*sqrt(2)+2*sqrt(2);
+3*2^(3/2);
+
+sqrt(1/2)+sqrt(1/2);
+sqrt(2);
+sqrt(1/2)+sqrt(1/2)+sqrt(1/2);
+3/sqrt(2);
+sqrt(1/2)+sqrt(1/2)+sqrt(1/2)+sqrt(1/2);
+2^(3/2);
+sqrt(1/2)+sqrt(1/2)+sqrt(1/2)+sqrt(1/2)+sqrt(1/2);
+5/sqrt(2);
+
+2*sqrt(1/2)+3*sqrt(1/2);
+5/sqrt(2);
+3*sqrt(1/2)+2*sqrt(1/2);
+5/sqrt(2);
+3*sqrt(1/2)+2*sqrt(1/2)+sqrt(1/2);
+3*sqrt(2);
+sqrt(1/2)+3*sqrt(1/2)+2*sqrt(1/2);
+3*sqrt(2);
+
+2^(1/5)+2^(1/5);
+2^(6/5);
+2^(1/5)+2^(1/5)+2^(1/5);
+3*2^(1/5);
+2^(1/5)+2^(1/5)+2^(1/5)+2^(1/5);
+2^(11/5);
+2^(1/5)+2^(1/5)+2^(1/5)+2^(1/5)+2^(1/5);
+5*2^(1/5);
+
+(1/2)^(1/5)+(1/2)^(1/5);
+2^(4/5);
+(1/2)^(1/5)+(1/2)^(1/5)+(1/2)^(1/5);
+3/2^(1/5);
+(1/2)^(1/5)+(1/2)^(1/5)+(1/2)^(1/5)+(1/2)^(1/5);
+2^(9/5);
+(1/2)^(1/5)+(1/2)^(1/5)+(1/2)^(1/5)+(1/2)^(1/5)+(1/2)^(1/5);
+5/2^(1/5);
+
+2*(1/2)^(1/5)+3*(1/2)^(1/5);
+5/2^(1/5);
+3*(1/2)^(1/5)+2*(1/2)^(1/5);
+5/2^(1/5);
+
+2^sin(x)+2^sin(x);
+2^(sin(x)+1);
+2^sin(x)+2^sin(x)+2^sin(x);
+3*2^sin(x);
+2^sin(x)+2^sin(x)+2^sin(x)+2^sin(x);
+2^(sin(x)+2);
+2^sin(x)+2^sin(x)+2^sin(x)+2^sin(x)+2^sin(x);
+5*2^sin(x);
+
+(1/2)^sin(x)+(1/2)^sin(x);
+2^(1-sin(x));
+(1/2)^sin(x)+(1/2)^sin(x)+(1/2)^sin(x);
+3/2^sin(x);
+(1/2)^sin(x)+(1/2)^sin(x)+(1/2)^sin(x)+(1/2)^sin(x);
+2^(2-sin(x));
+(1/2)^sin(x)+(1/2)^sin(x)+(1/2)^sin(x)+(1/2)^sin(x)+(1/2)^sin(x);
+5/2^sin(x);
+
+(1-sqrt(5))^3-4*(1-sqrt(5))^2+8, expand;
+0;
+1/sqrt(2)+1/sqrt(2)+1/sqrt(2);
+3/sqrt(2);
+2^(9/5)+2^(4/5);
+3*2^(4/5);
+3*sqrt(2)+2*sqrt(2);
+5*sqrt(2);
+2*sqrt(2)+3*sqrt(2);
+5*sqrt(2);
+(1-sqrt(5))^3, expand;
+16-8*sqrt(5);
+p : z^3-2^(3/2)*%i*z^2-4*z^2+2^(5/2)*%i*z+2*z;
+z^3-2^(3/2)*%i*z^2-4*z^2+2^(5/2)*%i*z+2*z;
+divide(p, (z-2-sqrt(2)*%i),z);
+[z^2+(-sqrt(2)*%i-2)*z,0];
+2^a + 3*2^(a+1);
+7*2^a;
+2^(3/5)+2^(-2/5);
+3/2^(2/5);
+2^(3/5+x)+2^(-2/5+x);
+3*2^(x-2/5);
+
+/* Bug ID: 1439566 - zerobern & bernpoly
+ * Show that the option variable zerobern does not change the results.
+ */
+zerobern:false;
+false;
+bernpoly(x,3);
+x^3-3*x^2/2+x/2$
+bernpoly(x,5);
+x^5-5*x^4/2+5*x^3/3-x/6$
+reset(zerobern);
+[zerobern];
+
+/* Bug ID: 2905929 - gcdex
+ */
+
+q0[2] : 6;
+6$
+ratdisrep(gcdex(x-7, x-8));
+[1,-1,1]$
+
+is(equal(gcdex(z^2-1, 0, z), [1,0,z^2-1]));
+true;
+
+is(equal(gcdex(0, z^2-1, z), [0, 1, z^2-1]));
+true;
+
+/* Examples from Maxima Manual */
+is(equal(gcdex(x^2+1, x^3+4), [-(x^2+4*x-1)/17,(x+4)/17,1]));
+true$
+is(equal(gcdex(x*(y+1), y^2-1, x), [0,1/(y^2-1),1]));
+true$
+
+kill(q0);
+done;

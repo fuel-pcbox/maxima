@@ -132,7 +132,7 @@
 (defmvar $%emode t)
 (defmvar $lognegint nil)
 (defmvar $ratsimpexpons nil)
-(defmvar $logexpand nil) ; Possible values are T, $ALL and $SUPER
+(defmvar $logexpand t) ; Possible values are T, $ALL and $SUPER
 (defmvar $radexpand t)
 (defmvar $subnumsimp nil)
 (defmvar $logsimp t)
@@ -235,7 +235,7 @@
 (defmfun mmminusp (x) (and (not (atom x)) (eq (caar x) 'mminus)))
 
 (defmfun mnegp (x)
-  (cond ((numberp x) (minusp x))
+  (cond ((realp x) (minusp x))
         ((or (ratnump x) ($bfloatp x)) (minusp (cadr x)))))
 
 (defmfun mqapplyp (e) (and (not (atom e)) (eq (caar e) 'mqapply)))
@@ -1178,8 +1178,9 @@
 ;;;-----------------------------------------------------------------------------
 
 (defun plusin (x fm)
-  (prog (x1 flag check w xnew)
+  (prog (x1 x2 flag check v w xnew a n m c)
      (setq w 1)
+     (setq v 1)
      (cond ((mtimesp x)
             (setq check x)
             (if (mnump (cadr x)) (setq w (cadr x) x (cddr x))
@@ -1189,6 +1190,96 @@
            xnew (list* '(mtimes) w x))
   start
      (cond ((null (cdr fm)))
+           ((and (alike1 x1 (cadr fm)) (null (cdr x)))
+            (go equ))
+           ;; Implement the simplification of
+           ;;   v*a^(c+n)+w*a^(c+m) -> (v*a^n+w*a^m)*a^c
+           ;; where a, v, w, and (n-m) are integers.
+           ((and (or (mexptp (setq x2 (cadr fm)))
+                     (and (mtimesp x2)
+                          (not (alike1 x1 x2))
+                          (null (cadddr x2))
+                          (integerp (setq v (cadr x2)))
+                          (mexptp (setq x2 (caddr x2)))))
+                 (integerp (setq a (cadr x2)))
+                 (mexptp x1)
+                 (equal a (cadr x1))
+                 (integerp (sub (caddr x2) (caddr x1))))
+            (setq n (if (and (mplusp (caddr x2))
+                             (mnump (cadr (caddr x2))))
+                        (cadr (caddr x2))
+                        (if (mnump (caddr x2))
+                            (caddr x2)
+                            0)))
+            (setq m (if (and (mplusp (caddr x1))
+                             (mnump (cadr (caddr x1))))
+                        (cadr (caddr x1))
+                        (if (mnump (caddr x1))
+                            (caddr x1)
+                            0)))
+            (setq c (sub (caddr x2) n))
+            (cond ((integerp n)
+                   ;; The simple case:
+                   ;; n and m are integers and the result is (v*a^n+w*a^m)*a^c.
+                   (setq x1 (mul (addk (timesk v (exptb a n))
+                                       (timesk w (exptb a m)))
+                                 (power a c)))
+                   (go equt2))
+                  (t
+                   ;; n and m are rational numbers: The difference n-m is an
+                   ;; integer. The rational numbers might be improper fractions.
+                   ;; The mixed numbers are: n = n1 + d1/r and m = n2 + d2/r,
+                   ;; where r is the common denominator. We have two cases:
+                   ;; I)  d1 = d2: e.g. 2^(1/3+c)+2^(4/3+c)
+                   ;;     The result is (v*a^n1+w*a^n2)*a^(c+d1/r)
+                   ;; II) d1 # d2: e.g. 2^(1/2+c)+2^(-1/2+c)
+                   ;;     In this case one of the exponents d1 or d2 must
+                   ;;     be negative. The negative exponent is factored out.
+                   ;;     This guarantees that the factor (v*a^n1+w*a^n2)
+                   ;;     is an integer. But the positive exponent has to be
+                   ;;     adjusted accordingly. E.g. when we factor out
+                   ;;     a^(d2/r) because d2 is negative, then we have to
+                   ;;     adjust the positive exponent to n1 -> n1+(d1-d2)/r.
+                   ;; Remark:
+                   ;; Part of the simplification is done in simptimes. E.g.
+                   ;; this algorithm simplifies the sum sqrt(2)+3*sqrt(2)
+                   ;; to 4*sqrt(2). In simptimes this is further simplified
+                   ;; to 2^(5/2).
+                   (multiple-value-bind (n1 d1)
+                       (truncate (num1 n) (denom1 n))
+                     (multiple-value-bind (n2 d2)
+                         (truncate (num1 m) (denom1 m))
+                       (cond ((equal d1 d2)
+                              ;; Case I: -> (v*a^n1+w*a^n2)*a^(c+d1/r)
+                              (setq x1
+                                    (mul (addk (timesk v (exptb a n1))
+                                               (timesk w (exptb a n2)))
+                                         (power a
+                                                (add c
+                                                     (div d1 (denom1 n))))))
+                              (go equt2))
+                             ((minusp d2)
+                              ;; Case II:: d2 is negative, adjust n1.
+                              (setq n1 (add n1 (div (sub d1 d2) (denom1 n))))
+                              (setq x1
+                                    (mul (addk (timesk v (exptb a n1))
+                                               (timesk w (exptb a n2)))
+                                         (power a
+                                                (add c
+                                                     (div d2 (denom1 n))))))
+                              (go equt2))
+                             ((minusp d1)
+                              ;; Case II: d1 is negative, adjust n2.
+                              (setq n2 (add n2 (div (sub d2 d1) (denom1 n))))
+                              (setq x1
+                                    (mul (addk (timesk v (exptb a n1))
+                                               (timesk w (exptb a n2)))
+                                         (power a 
+                                                (add c
+                                                     (div d1 (denom1 n))))))
+                              (go equt2))
+                             ;; This clause should never be reached.
+                             (t (merror "Internal error in simplus."))))))))
            ((mtimesp (cadr fm))
             (cond ((alike1 x1 (cadr fm))
                    (go equt))
@@ -1196,8 +1287,6 @@
                    (setq flag t) ; found common factor
                    (go equt))
                   ((great xnew (cadr fm)) (go gr))))
-           ((and (alike1 x1 (cadr fm)) (null (cdr x)))
-            (go equ))
            ((great x1 (cadr fm)) (go gr)))
      (setq xnew (eqtest (testt xnew) (or check '((foo)))))
      (return (cdr (rplacd fm (cons xnew (cdr fm)))))
@@ -1234,6 +1323,7 @@
   equt
      ;; Call muln to get a simplified product.
      (setq x1 (muln (cons (addk w (if flag (cadadr fm) 1)) x) t))
+  equt2
      (rplaca (cdr fm)
              (if (zerop1 x1)
                  (list* '(mtimes) x1 x)
@@ -1277,7 +1367,7 @@
   (let (($doscmxops t) ($domxmxops t) ($listarith t))
     (simplify (fmapl1 'mplus x1 x2))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; ----------------------------------------------------------------------------
 
 ;;; Simplification of the Log function
 
@@ -1286,69 +1376,72 @@
 
 (defun simpln (x y z)
   (oneargcheck x)
-  (cond ((onep1 (setq y (simpcheck (cadr x) z))) (addk -1 y))
-	((zerop1 y)
-	 (cond (radcanp (list '(%log simp) 0))
+  (setq y (simpcheck (cadr x) z))
+  (cond ((onep1 y) (addk -1 y))
+        ((zerop1 y)
+         (cond (radcanp (list '(%log simp) 0))
                ((not errorsw)
                 (merror (intl:gettext "log: encountered log(0).")))
-	       (t (throw 'errorsw t))))
+               (t (throw 'errorsw t))))
         ;; Check evaluation in floating point precision.
         ((flonum-eval (mop x) y))
         ;; Check evaluation in bigfloag precision.
         ((and (not (member 'simp (car x) :test #'eq))
               (big-float-eval (mop x) y)))
         ((eq y '$%e) 1)
-        ((and (mexptp y)
-              (eq (cadr y) '$%e)
-              (or (not (member ($csign (caddr y)) '($complex $imaginary)))
-                  (not (member ($csign (mul '$%i (caddr y))) 
-                               '($complex $imaginary)))))
-         ;; Simplify log(exp(x)) and log(exp(%i*x)), where x is a real
-         (caddr y))
-        ((and (mexptp y)
-              (ratnump (caddr y))
-              (or (equal 1 (cadr (caddr y)))
-                  (equal -1 (cadr (caddr y)))))
-         ;; Simplify log(z^(1/n)) -> log(z)/n, where n is an integer
-         (mul (caddr y)
-              (take '(%log) (cadr y))))
+        ((mexptp y)
+         (cond ((or (and $logexpand (eq $domain '$real))
+                    (member $logexpand '($all $super))
+                    (and (eq ($sign (cadr y)) '$pos)
+                         (not (member ($csign (caddr y))
+                                      '($complex $imaginary)))))
+                ;; Simplify log(x^a) -> a*log(x), where x > 0 and a is real
+                (mul (caddr y) (take '(%log) (cadr y))))
+               ((or (and (ratnump (caddr y))
+                         (or (eql 1 (cadr (caddr y)))
+                             (eql -1 (cadr (caddr y)))))
+                    (maxima-integerp (inv (caddr y))))
+                ;; Simplify log(z^(1/n)) -> log(z)/n, where n is an integer
+                (mul (caddr y)
+                     (take '(%log) (cadr y))))
+               ((and (eq (cadr y) '$%e)
+                     (or (not (member ($csign (caddr y))
+                                      '($complex $imaginary)))
+                         (not (member ($csign (mul '$%i (caddr y)))
+                                      '($complex $imaginary)))))
+                ;; Simplify log(exp(x)) and log(exp(%i*x)), where x is a real
+                (caddr y))
+               (t (eqtest (list '(%log) y) x))))
         ((ratnump y)
          ;; Simplify log(n/d)
-	 (cond ((equal (cadr y) 1) (simpln1 (list nil (caddr y) -1)))
-	       ((eq $logexpand '$super)
-		(simplifya (list '(mplus) (simplifya (list '(%log) (cadr y)) t)
-				 (simpln1 (list nil (caddr y) -1))) t))
-	       (t (eqtest (list '(%log) y) x))))
-        ((and (mexptp y)
-              (eq ($sign (cadr y)) '$pos)
-              (not (member ($csign (caddr y)) '($complex $imaginary))))
-         ;; Simplify log(x^a) -> a*log(x), where x > 0 and a is real
-         (mul (caddr y) (take '(%log) (cadr y))))
-	((and $logexpand (mexptp y)) (simpln1 y))
-	((and (member $logexpand '($all $super) :test #'eq) (mtimesp y))
-	 (prog (b)
-	    (setq y (cdr y))
-	    loop (setq b (cons (cond ((not (mexptp (car y)))
-				      (simplifya (list '(%log) (car y)) t))
-				     (t (simpln1 (car y)))) b))
-	    (cond ((null (setq y (cdr y)))
-		   (return (simplifya (cons '(mplus) b) t))))
-	    (go loop)))
+         (cond ((eql (cadr y) 1)
+                (mul -1 (take '(%log) (caddr y))))
+               ((eq $logexpand '$super)
+                (sub (take '(%log) (cadr y)) (take '(%log) (caddr y))))
+               (t (eqtest (list '(%log) y) x))))
+        ((and (member $logexpand '($all $super) :test #'eq)
+              (mtimesp y))
+         (do ((y (cdr y) (cdr y))
+              (b nil))
+             ((null y) (return (addn b t)))
+           (setq b (cons (take '(%log) (car y)) b))))
         ((and (member $logexpand '($all $super))
               (consp y)
               (member (caar y) '(%product $product)))
          (let ((new-op (if (eq (getcharn (caar y) 1) #\%) '%sum '$sum)))
            (simplifya `((,new-op) ((%log) ,(cadr y)) ,@(cddr y)) t)))
-	((and $lognegint (maxima-integerp y) (eq ($sign y) '$neg))
-	 (add (mul '$%i '$%pi) (take '(%log) (neg y))))
+        ((and $lognegint
+              (maxima-integerp y)
+              (eq ($sign y) '$neg))
+         (add (mul '$%i '$%pi) (take '(%log) (neg y))))
         ((taylorize (mop x) (second x)))
-	(t (eqtest (list '(%log) y) x))))
+        (t (eqtest (list '(%log) y) x))))
 
 (defun simpln1 (w)
   (simplifya (list '(mtimes) (caddr w)
 		   (simplifya (list '(%log) (cadr w)) t)) t))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; ----------------------------------------------------------------------------
 
 ;;; Implementation of the Square root function
 
@@ -2101,10 +2194,10 @@
             (return res))
            ((eq gr '$%i)
             (return (%itopot pot)))
-           ((and (numberp gr) (minusp gr) (mevenp pot))
+           ((and (realp gr) (minusp gr) (mevenp pot))
             (setq gr (- gr))
             (go cont))
-           ((and (numberp gr) (minusp gr) (moddp pot))
+           ((and (realp gr) (minusp gr) (moddp pot))
             (return (mul2 -1 (power (- gr) pot))))
            ((and (equal gr -1) (maxima-integerp pot) (mminusp pot))
             (setq pot (neg pot))
@@ -2174,14 +2267,15 @@
                      (equal (cadr gr) -1))
                  (equal -1 ($num gr)) ; only for -1
                  ;; Do not simplify for a complex base.
-                 (not (member ($csign gr) '($complex $imaginary))))
+                 (not (member ($csign gr) '($complex $imaginary)))
+                 (and (eq $domain '$real) $radexpand))
             ;; (-1/x)^a -> 1/(-x)^a for x negative
             ;; For all other cases (-1)^a/x^a
             (if (eq ($csign (setq w ($denom gr))) '$neg)
                 (return (inv (power (neg w) pot)))
                 (return (div (power -1 pot)
                              (power w pot)))))
-          ((not $radexpand) (go up)))
+           ((or (eq $domain '$complex) (not $radexpand)) (go up)))
      (return (do ((l (cdr gr) (cdr l)) (res (ncons 1)) (rad))
                  ((null l)
                   (cond ((equal res '(1))
@@ -2200,7 +2294,7 @@
                ;; Check with $csign to be more complete. This prevents wrong 
                ;; simplifications like sqrt(-z^2)->%i*sqrt(z^2) for z complex.
                (setq z ($csign (car l)))
-               (if (member z '($complex $imaginary)) 
+               (if (member z '($complex $imaginary))
                    (setq z '$pnz)) ; if appears complex, unknown sign
                (setq w (cond ((member z '($neg $nz) :test #'eq)
                               (setq rad (cons -1 rad))
@@ -2230,11 +2324,11 @@
      (setq w (testt (tms (simplifya y t) 1 (cons '(mtimes) res))))
      (cond (rulesw (setq rulesw nil res (cdr w))))
      (go start)
-
-  retno 
+     
+  retno
      (return (exptrl gr pot))
      
-  atgr  
+  atgr
      (cond ((zerop1 pot) (go retno))
            ((onep1 pot)
             (let ((y (mget gr '$numer)))
@@ -2319,17 +2413,22 @@
      (cond ((or (eq $radexpand '$all)
                 ;; b is an integer or an odd rational
                 (simplexpon pot)
-                (and (not (member ($csign (caddr gr)) '($complex $imaginary)))
+                (and (eq $domain '$complex)
+                     (not (member ($csign (caddr gr)) '($complex $imaginary)))
                          ;; z >= 0 and a not a complex
-                     (or (member (setq z ($csign (cadr gr))) '($pos $pz $zero))
+                     (or (member ($csign (cadr gr)) '($pos $pz $zero))
                          ;; -1 < a <= 1
                          (and (mnump (caddr gr))
                               (eq ($sign (sub 1 (take '(mabs) (caddr gr))))
                                   '$pos))))
+                (and (eq $domain '$real)
+                     (member ($csign (cadr gr)) '($pos $pz $zero)))
                 ;; (1/z)^a -> 1/z^a when z a constant complex
-                (and (equal (caddr gr) -1)
-                     (eq z '$complex)
-                     ($constantp (cadr gr)))
+                (and (eql (caddr gr) -1)
+                     (or (and $radexpand
+                              (eq $domain '$real))
+                         (and (eq ($csign (cadr gr)) '$complex)
+                              ($constantp (cadr gr)))))
                 ;; This does (1/z)^a -> 1/z^a. This is in general wrong.
                 ;; We switch this type of simplification on, when
                 ;; $ratsimpexpons is T. E.g. radcan sets this flag to T.
@@ -2337,29 +2436,26 @@
                 ;; this simplification.
                 (and $ratsimpexpons
                      (equal (caddr gr) -1))
-                (and (eq $domain '$real)
-                     (odnump (caddr gr))
-                     ;; Again not correct in general.
-                     ;; At first exclude the sqrt function.
-                     (not (alike1 pot '((rat simp) 1 2)))
-                     (not (alike1 pot '((rat simp) -1 2)))))
+                (and $radexpand
+                     (eq $domain '$real)
+                     (odnump (caddr gr))))
             ;; Simplify (z^a)^b -> z^(a*b)
-            (setq pot (mult pot (caddr gr)) gr (cadr gr)))
+            (setq pot (mul pot (caddr gr))
+                  gr (cadr gr)))
            ((and (eq $domain '$real)
                  (free gr '$%i)
                  $radexpand
                  (not (decl-complexp (cadr gr)))
                  (evnump (caddr gr)))
             ;; Simplify (x^a)^b -> abs(x)^(a*b)
-            (setq pot (mult pot (caddr gr)) gr (radmabs (cadr gr))))
-           ((and (mminusp (caddr gr))
-                 ;; Again not correct in general.
-                 ;; At first exclude the sqrt function.
-                 (not (alike1 pot '((rat simp) 1 2)))
-                 (not (alike1 pot '((rat simp) -1 2))))
+            (setq pot (mul pot (caddr gr))
+                  gr (radmabs (cadr gr))))
+           ((and $radexpand
+                 (eq $domain '$real)
+                 (mminusp (caddr gr)))
             ;; Simplify (1/z^a)^b -> 1/(z^a)^b
             (setq pot (neg pot)
-                  gr (list (car gr) (cadr gr) (neg (caddr gr)))))
+                  gr (power (cadr gr) (neg (caddr gr)))))
            (t (go up)))
      (go cont)))
 

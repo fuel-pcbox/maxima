@@ -187,7 +187,7 @@
   (cond ((and (symbolp form) (get form atom-context))
 	 (funcall (get form atom-context) form result))
 	((stringp form) (dimension-string (makestring form) result))
-	((ml-typep form 'array)
+	((member (marray-type form) '(array hash-table $functional))
 	 (dimension-array-object form result))
 	(t (dimension-string (makestring form) result))))
 
@@ -402,8 +402,16 @@
 (defun dimnary (form result lop op rop w)
   (declare (ignore op))
   (if (and (consp form)
-	   (member (safe-get (caar form) 'dimension) '(dimension-infix dimension-nary)))
-      (dimension-paren form result)
+           (member (safe-get (caar form) 'dimension)
+                   '(dimension-infix dimension-nary)))
+      (progn
+        (setq result
+              (cons #\)
+                    (dimension form
+                               (cons #\( result)
+                               'mparen 'mparen (if w (1+ w)) (1+ right))))
+        (incf width 2)
+        result)
       (dimension form result lop rop w right)))
 
 ;; Output for Boolean n-ary operators.
