@@ -85,15 +85,15 @@ sin(y)*(10.0+6*cos(x)),
      "set size 1.5, 1.5;set term postscript eps enhanced color solid 24")
     ((mlist) $plot_realpart nil)))
 
-;; $plot_realpart option is false by default but *plot-realpart* is true because coerce-float-fun
-;; is used outside of plot package too.
+;; $plot_realpart option is false by default but *plot-realpart* is true
+;; because coerce-float-fun is used outside of plot package too.
 (defvar *plot-realpart* t)
 
 (defun maybe-realpart (x)
   (if *plot-realpart*
       ($realpart x)
-      (if (eq 0 ($imagpart x))
-          x
+      (if (zerop1 ($imagpart x))
+          ($realpart x)
           nil)))
 
 (defvar *missing-data-indicator* "NaN")
@@ -2063,8 +2063,8 @@ Several functions depending on the two variables v1 and v2:
                         (third lvars)
                         (rest ($listofvars (mfuncall fun (second lvars)
                                                      (third lvars))))))
-                  (merror
-                   (intl:gettext "plot3d: expected <expr. of v1 and v2>, [v1, min, max], [v2, min, max]")))))
+                  (mtell (intl:gettext "plot3d: expected <expr. of v1 and v2>, [v1, min, max], [v2, min, max]~%"))
+                  (mtell (intl:gettext "plot3d: keep going and hope for the best.~%")))))
           (let* ((pl
                   (draw3d
                    fun (third xrange) (fourth xrange) (third yrange)

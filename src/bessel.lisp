@@ -260,6 +260,15 @@
                  (take '(%bessel_j) (- order 1) arg))
             (take '(%bessel_j) (- order 2) arg)))
       
+      ($hypergeometric_representation
+        ;; Return Hypergeometric representation of bessel_j
+        (mul (inv (take '(%gamma) (add order 1)))
+             (power (div arg 2) order)
+             (take '($hypergeometric)
+                   (list '(mlist))
+                   (list '(mlist) (add order 1))
+                   (neg (div (mul arg arg) 4)))))
+      
       (t
        (eqtest (list '(%bessel_j) order arg) expr)))))
 
@@ -302,7 +311,7 @@
           ;; We have a real arg and order > 0 and order not 0 or 1
           ;; for this case we can call the function dbesj
           (multiple-value-bind (n alpha) (floor (float order))
-            (let ((jvals (make-array (1+ n) :element-type 'double-float)))
+            (let ((jvals (make-array (1+ n) :element-type 'flonum)))
               (slatec:dbesj (abs (float arg)) alpha (1+ n) jvals 0)
               (cond ((>= arg 0) 
                      (aref jvals n))
@@ -338,8 +347,8 @@
             (* 0.5 (+ (hankel-1 order arg) (hankel-2 order arg))))
            (t
             (multiple-value-bind (n alpha) (floor (float order))
-              (let ((cyr (make-array (1+ n) :element-type 'double-float))
-                    (cyi (make-array (1+ n) :element-type 'double-float)))
+              (let ((cyr (make-array (1+ n) :element-type 'flonum))
+                    (cyi (make-array (1+ n) :element-type 'flonum)))
                 (multiple-value-bind (v-zr v-zi v-fnu v-kode v-n
                                            v-cyr v-cyi v-nz v-ierr)
                    (slatec:zbesj (float (realpart arg))
@@ -408,7 +417,7 @@
     (cond
      (($oddp n)
       ;; integrate(bessel_y(2*N+1,z)) , N > 0 
-      ;; = -bessel_y(0,z) - 2 * sum(bessel_y(2*k,z),k,1,(n-1)/2)
+      ;; = -bessel_y(0,z) - 2 * sum(bessel_y(2*k,z),k,1,N)
       (let* ((k (gensym))
 	     (answer `((mplus) ((mtimes) -1 ((%bessel_y) 0 z))
                        ((mtimes) -2
@@ -422,19 +431,23 @@
       ;; integrate(bessel_y(2*N,z)) , N > 0
       ;; = (1/2)*%pi*z*(bessel_y(0,z)*struve_h(-1,z)
       ;;               +bessel_y(1,z)*struve_h(0,z))
-      ;;    - 2 * sum(bessel_y(2*k,z),k,1,n/2)
+      ;;    - 2 * sum(bessel_y(2*k+1,z),k,0,N-1)
       (let* 
 	  ((k (gensym))
 	   (answer `((mplus)
 		     ((mtimes) -2
-		      ((%sum) ((%bessel_y) ((mtimes) 2 ,k) z) ,k 1
-		       ((mtimes) ((rat) 1 2) ,n)))
+		      ((%sum)
+		       ((%bessel_y) ((mplus) 1 ((mtimes) 2 ,k)) z)
+		       ,k 0
+		       ((mplus)
+		        -1
+		        ((mtimes) ((rat) 1 2) ,n))))
 		     ((mtimes) ((rat) 1 2) $%pi z
 		      ((mplus)
-		       ((mtimes) 
+		       ((mtimes)
 			((%bessel_y) 0 z)
 			((%struve_h) -1 z))
-		       ((mtimes) 
+		       ((mtimes)
 			((%bessel_y) 1 z)
 			((%struve_h) 0 z)))))))
 	;; Expand out the sum if n < 10.  Otherwise fix up the indices
@@ -513,7 +526,7 @@
                     ($float t)
                     (order ($float order))
                     (arg ($float arg))
-                    (dpi (coerce pi 'double-float)))
+                    (dpi (coerce pi 'flonum)))
                 ($float
                   ($rectform
                     (add
@@ -564,6 +577,28 @@
                  (inv arg) 
                  (take '(%bessel_y) (- order 1) arg))
             (take '(%bessel_y) (- order 2) arg)))
+      
+      ($hypergeometric_representation
+        ;; Return Hypergeometric representation of bessel_y
+        (add (mul -1
+                  (power 2 order)
+                  (inv (power arg order))
+                  (take '(%gamma) order)
+                  (inv '$%pi)
+                  (take '($hypergeometric)
+                        (list '(mlist))
+                        (list '(mlist) (sub 1 order))
+                        (mul -1 (div (mul arg arg) 4))))
+             (mul -1
+                  (inv (power 2 order))
+                  (power arg order)
+                  (take '(%cos) (mul order '$%pi))
+                  (take '(%gamma) (neg order))
+                  (inv '$%pi)
+                  (take '($hypergeometric)
+                        (list '(mlist))
+                        (list '(mlist) (add 1 order))
+                        (mul -1 (div (mul arg arg) 4))))))
       
       (t
        (eqtest (list '(%bessel_y) order arg) expr)))))
@@ -630,7 +665,7 @@
                          (t result))))))
          (t
           (multiple-value-bind (n alpha) (floor (float order))
-            (let ((jvals (make-array (1+ n) :element-type 'double-float)))
+            (let ((jvals (make-array (1+ n) :element-type 'flonum)))
               ;; First we do the calculation for an positive argument.
               (slatec:dbesy (abs (float arg)) alpha (1+ n) jvals)
               
@@ -638,7 +673,7 @@
               (cond ((>= arg 0)                
                      (aref jvals n))
                     (t
-                     (let* ((dpi (coerce pi 'double-float))
+                     (let* ((dpi (coerce pi 'flonum))
                             (s1 (cis (- (* order dpi))))
                             (s2 (* #c(0 2) (cos (* order dpi)))))
                        (let ((result (+ (* s1 (aref jvals n)) 
@@ -665,10 +700,10 @@
                (complex 0 2)))
            (t
             (multiple-value-bind (n alpha) (floor (float order))
-              (let ((cyr (make-array (1+ n) :element-type 'double-float))
-                    (cyi (make-array (1+ n) :element-type 'double-float))
-                    (cwrkr (make-array (1+ n) :element-type 'double-float))
-                    (cwrki (make-array (1+ n) :element-type 'double-float)))
+              (let ((cyr (make-array (1+ n) :element-type 'flonum))
+                    (cyi (make-array (1+ n) :element-type 'flonum))
+                    (cwrkr (make-array (1+ n) :element-type 'flonum))
+                    (cwrki (make-array (1+ n) :element-type 'flonum)))
                 (multiple-value-bind (v-zr v-zi v-fnu v-kode v-n v-cyr v-cyi 
                                            v-nz v-cwrkr v-cwrki v-ierr)
                    (slatec::zbesy (float (realpart arg))
@@ -734,22 +769,22 @@
 (defun bessel-i-integral-2 (n unused)
   (declare (ignore unused))
   (case n
-	(0 
+	(0
 	 ;; integrate(bessel_i(0,z)
 	 ;; = (1/2)*z*(bessel_i(0,z)*(%pi*struve_l(1,z)+2)
 	 ;;            -%pi*bessel_i(1,z)*struve_l(0,z))
 	 '((mtimes) ((rat) 1 2) z
 	   ((mplus)
-	    ((mtimes) -1 $%pi 
+	    ((mtimes) -1 $%pi
 	     ((%bessel_i) 1 z)
 	     ((%struve_l) 0 z))
-	    ((mtimes) 
+	    ((mtimes)
 	     ((%bessel_i) 0 z)
 	     ((mplus) 2
 	      ((mtimes) $%pi ((%struve_l) 1 z)))))))
 	(1
-	 ;; integrate(bessel_j(1,z) = -bessel_i(0,z)
-	 '((mtimes) -1 ((%bessel_i) 0 z)))
+	 ;; integrate(bessel_i(1,z) = bessel_i(0,z)
+	 '((%bessel_i) 0 z))
 	(otherwise nil)))
 
 (putprop '%bessel_i `((n z) nil ,#'bessel-i-integral-2) 'integral)
@@ -875,6 +910,15 @@
                  (take '(%bessel_i) (- order 1) arg))
             (take '(%bessel_i) (- order 2) arg)))
       
+      ($hypergeometric_representation
+        ;; Return Hypergeometric representation of bessel_i
+        (mul (inv (take '(%gamma) (add order 1)))
+             (power (div arg 2) order)
+             (take '($hypergeometric)
+                   (list '(mlist))
+                   (list '(mlist) (add order 1))
+                   (div (mul arg arg) 4))))
+      
       (t
        (eqtest (list '(%bessel_i) order arg) expr)))))
 
@@ -927,7 +971,7 @@
          (t
           ;; Now the case order > 0 and arg >= 0
           (multiple-value-bind (n alpha) (floor (float order))
-            (let ((jvals (make-array (1+ n) :element-type 'double-float)))
+            (let ((jvals (make-array (1+ n) :element-type 'flonum)))
               (slatec:dbesi (float (realpart arg)) alpha 1 (1+ n) jvals 0)
               (aref jvals n)))))))
     (t
@@ -951,7 +995,7 @@
            (cond ((minusp order)
                   ;;  I(-a,z) = I(a,z) + (2/pi)*sin(pi*a)*K(a,z)
                   (+ (complex (aref cyr n) (aref cyi n))
-                     (let ((dpi (coerce pi 'double-float)))
+                     (let ((dpi (coerce pi 'flonum)))
                        (* (/ 2.0 dpi)
                           (sin (* dpi (- order))) 
                           (bessel-k (- order) arg)))))
@@ -1042,16 +1086,21 @@
 		     ((mtimes) 2
 		      ((%sum)
 		       ((mtimes)
-			((%bessel_y) ((mplus) 1 ((mtimes) 2 ,k)) z)
+			((%bessel_k) ((mplus) 1 ((mtimes) 2 ,k)) z)
 			((mexpt) -1
 			 ((mplus) ,k ((mtimes) ((rat) 1 2) ,n))))
 		       ,k 0 ((mplus) -1 ((mtimes) ((rat) 1 2) ,n))))
-		     ((mtimes) ((rat) 1 2) $%pi
-		      ((mexpt) -1 ((mtimes) ((rat) 1 2) ,n)) z
+	             ((mtimes)
+	              ((rat) 1 2)
+	              $%pi
+	              ((mexpt) -1 ((mtimes) ((rat) 1 2) ,n))
+	              z
 		      ((mplus)
-		       ((mtimes) ((%bessel_k) 0 z)
+		       ((mtimes)
+		        ((%bessel_k) 0 z)
 			((%struve_l) -1 z))
-		       ((mtimes) ((%bessel_k) 1 z)
+		       ((mtimes)
+		        ((%bessel_k) 1 z)
 			((%struve_l) 0 z)))))))
 	;; expand out the sum if n < 10.  Otherwise fix up the indices
 	(if (< n 10) 
@@ -1104,6 +1153,7 @@
 
 (defun simp-bessel-k (expr ignored z)
   (declare (ignore ignored))
+  (twoargcheck expr)
   (let ((order (simpcheck (cadr expr) z))
         (arg (simpcheck (caddr expr) z))
         (rat-order nil))
@@ -1171,6 +1221,23 @@
                  (take '(%bessel_k) (- order 1) arg))
             (take '(%bessel_k) (- order 2) arg)))
       
+      ($hypergeometric_representation
+        ;; Return Hypergeometric representation of bessel_k
+        (add (mul (power 2 (sub order 1))
+                  (take '(%gamma) order)
+                  (inv (power arg order))
+                  (take '($hypergeometric)
+                        (list '(mlist))
+                        (list '(mlist) (sub 1 order))
+                        (div (mul arg arg) 4)))
+             (mul (inv (power 2 (add order 1)))
+                   (power arg order)
+                   (take '(%gamma) (neg order))
+                   (take '($hypergeometric)
+                         (list '(mlist))
+                         (list '(mlist) (add order 1))
+                         (div (mul arg arg) 4)))))
+      
       (t
        (eqtest (list '(%bessel_k) order arg) expr)))))
 
@@ -1187,7 +1254,7 @@
           ;; This is the extension for negative arg.
           ;; We use the following formula for evaluation:
           ;; K[v](-z) = exp(-i*pi*v) * K[n][z]-i * pi *I[n](z)
-          (let* ((dpi (coerce pi 'double-float))
+          (let* ((dpi (coerce pi 'flonum))
                  (s1 (cis (* dpi (- (abs order)))))
                  (s2 (* (complex 0 -1) dpi))
                  (result (+ (* s1 (bessel-k (abs order) (- arg)))
@@ -1211,7 +1278,7 @@
           ;; From A&S 9.6.6, K(-v,z) = K(v,z), so take the
           ;; absolute value of the order.
           (multiple-value-bind (n alpha) (floor (abs (float order)))
-            (let ((jvals (make-array (1+ n) :element-type 'double-float)))
+            (let ((jvals (make-array (1+ n) :element-type 'flonum)))
               (slatec:dbesk (float arg) alpha 1 (1+ n) jvals 0)
               (aref jvals n)))))))
     (t
@@ -1447,7 +1514,7 @@
          ((or ($oddp  order)
               ($featurep order '$odd)) 
           ;; order is an odd integer, pure imaginary noun-form
-          (cons 0 expr))
+          (cons 0 (mul -1 '$%i expr)))
          ((or ($evenp order)
               ($featurep order '$even))
            ;; order is an even integer, real noun-form
@@ -1468,7 +1535,7 @@
        (cond
           ((eq sign-arg '$neg)
            ;; order is half integral and arg negative, imaginary noun-form
-           (cons 0 expr))
+           (cons 0 (mul -1 '$%i expr)))
           (t
             ;; the sign of arg or order is not known
             (risplit-noun expr))))
@@ -1514,7 +1581,7 @@
        ;; order is half integral
        (cond
           ((eq sign-arg '$neg)
-           (cons 0 expr))
+           (cons 0 (mul -1 '$%i expr)))
           (t
             ;; the sign of arg is not known
             (risplit-noun expr))))
@@ -1595,6 +1662,7 @@
 
 (defun simp-hankel-1 (expr ignored z)
   (declare (ignore ignored))
+  (twoargcheck expr)
   (let ((order (simpcheck (cadr expr) z))
 	(arg   (simpcheck (caddr expr) z))
         rat-order)
@@ -1681,6 +1749,7 @@
 
 (defun simp-hankel-2 (expr ignored z)
   (declare (ignore ignored))
+  (twoargcheck expr)
   (let ((order (simpcheck (cadr expr) z))
 	(arg   (simpcheck (caddr expr) z))
         rat-order)
@@ -1774,6 +1843,7 @@
 
 (defun simp-struve-h (expr ignored z)
   (declare (ignore ignored))
+  (twoargcheck expr)
   (let ((order (simpcheck (cadr expr) z))
         (arg   (simpcheck (caddr expr) z)))
     (cond
@@ -2018,6 +2088,7 @@
 
 (defun simp-struve-l (expr ignored z)
   (declare (ignore ignored))
+  (twoargcheck expr)
   (let ((order (simpcheck (cadr expr) z))
         (arg   (simpcheck (caddr expr) z)))
     (cond

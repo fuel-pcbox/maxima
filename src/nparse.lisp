@@ -25,13 +25,14 @@
   (and (characterp num) (char<= num #\9) (char>= num #\0)))
 
 (defvar *parse-window* nil)
-(defvar *parse-stream*		()	  "input stream for Maxima parser")
+(defvar *parse-stream* ()     "input stream for Maxima parser")
+(defvar *parse-stream-eof* -1 "EOF value for Maxima parser")
 (defvar *parse-tyi* nil)
 
-(defvar macsyma-operators	()	  "Maxima operators structure")
+(defvar macsyma-operators ()  "Maxima operators structure")
 
-(defvar *mread-prompt*		nil	  "prompt used by `mread'")
-(defvar *mread-eof-obj* () "Bound by `mread' for use by `mread-raw'")
+(defvar *mread-prompt* nil    "prompt used by `mread'")
+(defvar *mread-eof-obj* ()    "Bound by `mread' for use by `mread-raw'")
 
 (defun mread-synerr (format-string &rest l)
     (let (tem
@@ -95,29 +96,10 @@
 ;;;;;                                                                    ;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; gobble whitespace, recognize '#' comments..
-(defun gobble-whitespace (&aux saw-newline ch saw-other)
-  (do ()
-      (nil) ; Gobble whitespace
-      (setq ch (parse-tyipeek))
-      (cond ((eql ch #\newline)
-	     (setq saw-other nil)
-	     (setq saw-newline t))
-	    ((member ch '(#\tab #\space #\linefeed #\return #\page))
-	     (setq saw-other t))
-	    ;; allow comments to be lines which are whitespace and then
-	    ;; a '#' character.
-	    ;; recognize
-	    ;; # 234 "jim.mac"
-	    ;; to set the current line information to be line 234 of jim.mac
-	    ((and (eql ch #\#) saw-newline)
-	     (let ((li (read-line *parse-stream* nil)))
-	       (unread-char #\newline *parse-stream*)
-	       (setq *parse-tyi* nil)
-	       (unless saw-other
-		   (grab-line-number li *parse-stream*))))
-	    (t  (return t)))
-     (parse-tyi)))
+(defun gobble-whitespace ()
+  (do ((ch (parse-tyipeek) (parse-tyipeek)))
+      ((not (member ch '(#\tab #\space #\linefeed #\return #\page #\newline))))
+    (parse-tyi)))
 
 (defun read-command-token (obj)
   (gobble-whitespace)
@@ -151,11 +133,10 @@
 ;; 99% of the time we dont have to unparse-tyi, and so there will
 ;; be no consing...
 
-
 (defun parse-tyi ()
   (let ((tem  *parse-tyi*))
     (cond ((null tem)
-	   (tyi-parse-int *parse-stream* -1))
+	   (tyi-parse-int *parse-stream* *parse-stream-eof*))
 	  ((atom tem)
 	   (setq *parse-tyi* nil)
 	   tem)
@@ -167,7 +148,7 @@
 (defun parse-tyipeek ()
   (let ((tem  *parse-tyi*))
     (cond ((null tem)
-	   (setq *parse-tyi* (tyi-parse-int *parse-stream* -1)))
+	   (setq *parse-tyi* (tyi-parse-int *parse-stream* *parse-stream-eof*)))
 	  ((atom tem) tem)
 	  (t (car tem)))))
 
@@ -187,7 +168,7 @@
 (defun read-command-token-aux (obj)
   (let* (result
 	 (ch (parse-tyipeek))
-	 (lis (if (eql ch -1)
+	 (lis (if (eql ch *parse-stream-eof*)
 		  nil
 	          (parser-assoc ch obj))))
     (cond ((null lis)
@@ -249,9 +230,13 @@
 (defun scan-token (flag)
   (do ((c (parse-tyipeek) (parse-tyipeek))
        (l () (cons c l)))
-      ((and flag (not (or (digit-char-p c (max 10. *read-base*)) (alphabetp c) (char= c #\\))))
-       (nreverse (or l (ncons (parse-tyi))))) ; Read at least one char ...
-    (when (char= (parse-tyi) #\\)
+      ((or (eql c *parse-stream-eof*)
+           (and flag
+                (not (or (digit-char-p c (max 10 *read-base*))
+                         (alphabetp c)
+                         (char= c #\\ )))))
+       (nreverse (or l (list (parse-tyi))))) ; Read at least one char ...
+    (when (char= (parse-tyi) #\\ )
       (setq c (parse-tyi)))
     (setq flag t)))
 
@@ -264,11 +249,11 @@
     (when init
       (vector-push-extend init buf))
     (do ((c (parse-tyipeek) (parse-tyipeek)))
-	((cond ((eql c -1))
+	((cond ((eql c *parse-stream-eof*))
 	       ((char= c #\")
 		(parse-tyi) t))
 	 (copy-seq buf))
-      (if (char= (parse-tyi) #\\)
+      (if (char= (parse-tyi) #\\ )
 	  (setq c (parse-tyi)))
       (vector-push-extend c  buf))))
 
@@ -347,7 +332,7 @@
 	    ;; For example, 1.234b1000 is converted by computing
 	    ;; bfloat(1234)*10b0^(1000-3).  Extra precision is used
 	    ;; during the bfloat computations.
-	    (let* ((extra-prec (+ *fast-bfloat-extra-bits* (ceiling (log exp 2d0))))
+	    (let* ((extra-prec (+ *fast-bfloat-extra-bits* (ceiling (log exp 2e0))))
 		   (fpprec (+ fpprec extra-prec))
 		   (mant (+ (* int-part (expt 10 frac-len)) frac-part))
 		   (bf-mant (bcons (intofp mant)))
@@ -505,7 +490,7 @@
 	((read-command-token macsyma-operators))
 	(t
 	 (let ((test (parse-tyipeek)))
-	   (cond  ((eql test -1.)
+	   (cond  ((eql test *parse-stream-eof*)
 		   (parse-tyi)
 		   (if eof-ok? eof-obj
 		       (maxima-error (intl:gettext "parser: end of file while scanning expression."))))

@@ -321,11 +321,6 @@
        (merror
          (intl:gettext
            "depends: argument must be a non-atomic expression; found ~M") z))
-      ((or (eq (caar z) 'mqapply)
-           (member 'array (cdar z) :test #'eq))
-       (merror
-         (intl:gettext
-           "depends: argument cannot be a subscripted expression; found ~M") z))
       (t
        (do ((zz z (cdr zz))
             (y nil))
@@ -335,7 +330,10 @@
             (unless (cdr $dependencies)
               (setq $dependencies (copy-list '((mlist simp)))))
             (add2lnc (cons (cons (caar z) nil) y) $dependencies))
-         (cond ((not (symbolp (cadr zz)))
+         (cond ((and ($subvarp (cadr zz))
+                     (not (member (caar (cadr zz)) y)))
+                (setq y (push (cadr zz) y)))
+               ((not (symbolp (cadr zz)))
                 (merror
                   (intl:gettext "depends: argument must be a symbol; found ~M")
                   (cadr zz)))
@@ -1194,7 +1192,7 @@
 			    ;; bits in n.  Then log(n) = log(2^m) + log(n/2^m).
 			    ;; n/2^m is approximately 1, so converting that to a
 			    ;; float is no problem.  log(2^m) = m * log(2).
-			    (+ (* m (log 2d0))
+			    (+ (* m (log 2e0))
 			       (log (float (/ n (ash 1 m)))))))))
 		 (($ratnump n)
 		  ;; float(log(n/m)) where n and m are integers.  Try computing
@@ -1215,7 +1213,7 @@
 			    (let* ((size (max (integer-length re)
 					      (integer-length im)))
 				   (scale (ash 1 size)))
-			      (+ (* size (log 2d0))
+			      (+ (* size (log 2e0))
 				 (log (complex (float (/ re scale))
 					       (float (/ im scale))))))))))
 		 (t

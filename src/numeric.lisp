@@ -5,7 +5,7 @@
 ;;; support double-float, (complex double-float) and Maxima bfloat and
 ;;; complex bfloat arithmetic, without having to write separate
 ;;; versions for each.  Of course, specially written versions for
-;;; double-float and (cmoplex double-float) will probably be much
+;;; double-float and (complex double-float) will probably be much
 ;;; faster, but this allows users to write just one routine that can
 ;;; handle all of the data types in a more "natural" Lisp style.
 
@@ -1532,7 +1532,21 @@
 	
 (defun %to (maxima-num &optional imag)
   (cond (imag
-	 (complex (to maxima-num) (to imag)))
+	 ;; Clisp has a "feature" that (complex rat float) does not
+	 ;; make the both components of the complex number a float.
+	 ;; Sometimes this is nice, but other times it's annoying
+	 ;; because it is non-ANSI behavior.  For our code, we really
+	 ;; want both components to be a float.
+	 #-clisp
+	 (complex (to maxima-num) (to imag))
+	 #+clisp
+	 (let ((re (to maxima-num))
+	       (im (to imag)))
+	   (cond ((and (rationalp re) (floatp im))
+		  (setf re (float re im)))
+		 ((and (rational im) (floatp re))
+		  (setf im (float im re))))
+	   (complex re im)))
 	(t
 	 (cond ((cl:realp maxima-num)
 		maxima-num)
@@ -1722,7 +1736,7 @@
 
 
 (defmethod float ((x bigfloat) (y cl:float))
-  (if (typep y 'double-float)
+  (if (typep y 'maxima::flonum)
       (maxima::fp2flo (real-value x))
       (fp2single (real-value x))))
 
@@ -1927,6 +1941,9 @@
 	   ;; (coerce bigfloat foo)
 	   (cond ((subtypep type 'cl:float)
 		  (float obj (cl:coerce 0 type)))
+		 ((subtypep type '(cl:complex long-float))
+		  (cl:complex (float (realpart obj) 1l0)
+			      (float (imagpart obj) 1l0)))
 		 ((subtypep type '(cl:complex double-float))
 		  (cl:complex (float (realpart obj) 1d0)
 			      (float (imagpart obj) 1d0)))
@@ -1937,15 +1954,18 @@
 		  ;; What should we do here?  Return a
 		  ;; complex-bigfloat?  A complex double-float?
 		  ;; complex single-float?  I arbitrarily select
-		  ;; complex double-float for now.
-		  (cl:complex (float (realpart obj) 1d0)
-			      (float (imagpart obj) 1d0)))
+		  ;; complex maxima:flonum for now.
+		  (cl:complex (float (realpart obj) 1.0)
+			      (float (imagpart obj) 1.0)))
 		 (t
 		  (coerce-error))))
 	  ((typep obj 'complex-bigfloat)
 	   ;; (coerce complex-bigfloat foo)
 	   (cond ((subtypep type 'complex-bigfloat)
 		  obj)
+		 ((subtypep type '(cl:complex long-float))
+		  (cl:complex (float (realpart obj) 1l0)
+			      (float (imagpart obj) 1l0)))
 		 ((subtypep type '(cl:complex double-float))
 		  (cl:complex (float (realpart obj) 1d0)
 			      (float (imagpart obj) 1d0)))

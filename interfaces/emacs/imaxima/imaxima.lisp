@@ -109,9 +109,9 @@ nor Gnuplot is not recognized by maxima"))))
 ;;; SBCL.
 ;;; by yasuaki honda
 #-sbcl
-(if (not (fboundp (find-symbol "PRINT-INVERT-CASE" :maxima)))
-    (defun print-invert-case (obj)
-      (princ-to-string obj)))
+(unless (fboundp 'maxima::print-invert-case)
+  (defun print-invert-case (obj)
+    (princ-to-string obj)))
 
 (defun print-case-sensitive (obj)
   (if obj
@@ -126,7 +126,7 @@ nor Gnuplot is not recognized by maxima"))))
 
 (defun main-prompt ()
   (format () (concatenate 'string (string (code-char 3)) "(~A~D) " (string (code-char 4)))
-    (STRIPDOLLAR (print-case-sensitive $inchar)) $linenum))
+    (stripdollar (print-case-sensitive $inchar)) $linenum))
 
 (defun break-dbm-loop (at)
   (let* (
@@ -672,7 +672,7 @@ nor Gnuplot is not recognized by maxima"))))
     (setq res (apply (symbol-function '$draw)
 		     (append
 		      `(
-			((mequal simp) $terminal $eps)
+			((mequal simp) $terminal $eps_color)
                         ((mequal simp) $dimensions
                                        ((mlist simp)
                                         ;; convert points to 1/100 of cm

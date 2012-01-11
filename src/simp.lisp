@@ -125,14 +125,13 @@
 (defmvar $logabs nil)
 (defmvar $limitdomain '$complex)
 (defmvar $listarith t)
-(defmvar $lognumer nil)
 (defmvar $domain '$real)
 (defmvar $m1pbranch nil)
 (defmvar $%e_to_numlog nil)
 (defmvar $%emode t)
 (defmvar $lognegint nil)
 (defmvar $ratsimpexpons nil)
-(defmvar $logexpand nil) ; Possible values are T, $ALL and $SUPER
+(defmvar $logexpand t) ; Possible values are T, $ALL and $SUPER
 (defmvar $radexpand t)
 (defmvar $subnumsimp nil)
 (defmvar $logsimp t)
@@ -235,7 +234,7 @@
 (defmfun mmminusp (x) (and (not (atom x)) (eq (caar x) 'mminus)))
 
 (defmfun mnegp (x)
-  (cond ((numberp x) (minusp x))
+  (cond ((realp x) (minusp x))
         ((or (ratnump x) ($bfloatp x)) (minusp (cadr x)))))
 
 (defmfun mqapplyp (e) (and (not (atom e)) (eq (caar e) 'mqapply)))
@@ -646,11 +645,11 @@
 	  x))
 
 ;;;-----------------------------------------------------------------------------
-;;; ADDK (XX YY)                                                   27.09.2010/DK
+;;; ADDK (X Y)                                                   27.09.2010/DK
 ;;;
 ;;; Arguments and values:
-;;;   XX     - a Maxima number
-;;;   YY     - a Maxima number
+;;;   X      - a Maxima number
+;;;   Y      - a Maxima number
 ;;;   result - a simplified Maxima number
 ;;;
 ;;; Description:
@@ -682,12 +681,12 @@
 ;;;   numbers the result is wrong or a Lisp error is generated.
 ;;;-----------------------------------------------------------------------------
 
-(defun addk (xx yy)
-  (cond ((equal xx 0) yy)
-	((equal yy 0) xx)
-	((and (numberp xx) (numberp yy)) (+ xx yy))
-	((or ($bfloatp xx) ($bfloatp yy)) ($bfloat (list '(mplus) xx yy)))
-	(t (prog (g a b (x xx)(y yy))
+(defun addk (x y)
+  (cond ((eql x 0) y)
+	((eql y 0) x)
+	((and (numberp x) (numberp y)) (+ x y))
+	((or ($bfloatp x) ($bfloatp y)) ($bfloat (list '(mplus) x y)))
+	(t (prog (g a b)
 	      (cond ((numberp x)
 		     (cond ((floatp x) (return (+ x (fpcofrat y))))
 			   (t (setq x (list '(rat) x 1)))))
@@ -697,15 +696,11 @@
 	      (setq g (gcd (caddr x) (caddr y)))
 	      (setq a (truncate (caddr x) g)
 	            b (truncate (caddr y) g))
-	      (setq g (timeskl (list '(rat) 1 g)
+	      (return (timeskl (list '(rat) 1 g)
 			       (list '(rat)
 				     (+ (* (cadr x) b)
 					   (* (cadr y) a))
-				     (* a b))))
-	      (return (cond ((numberp g) g)
-			    ((equal (caddr g) 1) (cadr g))
-			    ($float (fpcofrat g))
-	                    (t g)))))))
+				     (* a b))))))))
 
 ;;;-----------------------------------------------------------------------------
 ;;; *RED1 (X)                                                      27.09.2010/DK
@@ -1178,8 +1173,9 @@
 ;;;-----------------------------------------------------------------------------
 
 (defun plusin (x fm)
-  (prog (x1 flag check w xnew)
+  (prog (x1 x2 flag check v w xnew a n m c)
      (setq w 1)
+     (setq v 1)
      (cond ((mtimesp x)
             (setq check x)
             (if (mnump (cadr x)) (setq w (cadr x) x (cddr x))
@@ -1189,6 +1185,97 @@
            xnew (list* '(mtimes) w x))
   start
      (cond ((null (cdr fm)))
+           ((and (alike1 x1 (cadr fm)) (null (cdr x)))
+            (go equ))
+           ;; Implement the simplification of
+           ;;   v*a^(c+n)+w*a^(c+m) -> (v*a^n+w*a^m)*a^c
+           ;; where a, v, w, and (n-m) are integers.
+           ((and (or (and (mexptp (setq x2 (cadr fm)))
+                          (setq v 1))
+                     (and (mtimesp x2)
+                          (not (alike1 x1 x2))
+                          (null (cadddr x2))
+                          (integerp (setq v (cadr x2)))
+                          (mexptp (setq x2 (caddr x2)))))
+                 (integerp (setq a (cadr x2)))
+                 (mexptp x1)
+                 (equal a (cadr x1))
+                 (integerp (sub (caddr x2) (caddr x1))))
+            (setq n (if (and (mplusp (caddr x2))
+                             (mnump (cadr (caddr x2))))
+                        (cadr (caddr x2))
+                        (if (mnump (caddr x2))
+                            (caddr x2)
+                            0)))
+            (setq m (if (and (mplusp (caddr x1))
+                             (mnump (cadr (caddr x1))))
+                        (cadr (caddr x1))
+                        (if (mnump (caddr x1))
+                            (caddr x1)
+                            0)))
+            (setq c (sub (caddr x2) n))
+            (cond ((integerp n)
+                   ;; The simple case:
+                   ;; n and m are integers and the result is (v*a^n+w*a^m)*a^c.
+                   (setq x1 (mul (addk (timesk v (exptb a n))
+                                       (timesk w (exptb a m)))
+                                 (power a c)))
+                   (go equt2))
+                  (t
+                   ;; n and m are rational numbers: The difference n-m is an
+                   ;; integer. The rational numbers might be improper fractions.
+                   ;; The mixed numbers are: n = n1 + d1/r and m = n2 + d2/r,
+                   ;; where r is the common denominator. We have two cases:
+                   ;; I)  d1 = d2: e.g. 2^(1/3+c)+2^(4/3+c)
+                   ;;     The result is (v*a^n1+w*a^n2)*a^(c+d1/r)
+                   ;; II) d1 # d2: e.g. 2^(1/2+c)+2^(-1/2+c)
+                   ;;     In this case one of the exponents d1 or d2 must
+                   ;;     be negative. The negative exponent is factored out.
+                   ;;     This guarantees that the factor (v*a^n1+w*a^n2)
+                   ;;     is an integer. But the positive exponent has to be
+                   ;;     adjusted accordingly. E.g. when we factor out
+                   ;;     a^(d2/r) because d2 is negative, then we have to
+                   ;;     adjust the positive exponent to n1 -> n1+(d1-d2)/r.
+                   ;; Remark:
+                   ;; Part of the simplification is done in simptimes. E.g.
+                   ;; this algorithm simplifies the sum sqrt(2)+3*sqrt(2)
+                   ;; to 4*sqrt(2). In simptimes this is further simplified
+                   ;; to 2^(5/2).
+                   (multiple-value-bind (n1 d1)
+                       (truncate (num1 n) (denom1 n))
+                     (multiple-value-bind (n2 d2)
+                         (truncate (num1 m) (denom1 m))
+                       (cond ((equal d1 d2)
+                              ;; Case I: -> (v*a^n1+w*a^n2)*a^(c+d1/r)
+                              (setq x1
+                                    (mul (addk (timesk v (exptb a n1))
+                                               (timesk w (exptb a n2)))
+                                         (power a
+                                                (add c
+                                                     (div d1 (denom1 n))))))
+                              (go equt2))
+                             ((minusp d2)
+                              ;; Case II:: d2 is negative, adjust n1.
+                              (setq n1 (add n1 (div (sub d1 d2) (denom1 n))))
+                              (setq x1
+                                    (mul (addk (timesk v (exptb a n1))
+                                               (timesk w (exptb a n2)))
+                                         (power a
+                                                (add c
+                                                     (div d2 (denom1 n))))))
+                              (go equt2))
+                             ((minusp d1)
+                              ;; Case II: d1 is negative, adjust n2.
+                              (setq n2 (add n2 (div (sub d2 d1) (denom1 n))))
+                              (setq x1
+                                    (mul (addk (timesk v (exptb a n1))
+                                               (timesk w (exptb a n2)))
+                                         (power a 
+                                                (add c
+                                                     (div d1 (denom1 n))))))
+                              (go equt2))
+                             ;; This clause should never be reached.
+                             (t (merror "Internal error in simplus."))))))))
            ((mtimesp (cadr fm))
             (cond ((alike1 x1 (cadr fm))
                    (go equt))
@@ -1196,8 +1283,6 @@
                    (setq flag t) ; found common factor
                    (go equt))
                   ((great xnew (cadr fm)) (go gr))))
-           ((and (alike1 x1 (cadr fm)) (null (cdr x)))
-            (go equ))
            ((great x1 (cadr fm)) (go gr)))
      (setq xnew (eqtest (testt xnew) (or check '((foo)))))
      (return (cdr (rplacd fm (cons xnew (cdr fm)))))
@@ -1234,6 +1319,9 @@
   equt
      ;; Call muln to get a simplified product.
      (setq x1 (muln (cons (addk w (if flag (cadadr fm) 1)) x) t))
+     ;; Make a mplus expression to guarantee that x1 is added again into the sum
+     (setq x1 (list '(mplus) x1))
+  equt2
      (rplaca (cdr fm)
              (if (zerop1 x1)
                  (list* '(mtimes) x1 x)
@@ -1277,7 +1365,7 @@
   (let (($doscmxops t) ($domxmxops t) ($listarith t))
     (simplify (fmapl1 'mplus x1 x2))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; ----------------------------------------------------------------------------
 
 ;;; Simplification of the Log function
 
@@ -1286,69 +1374,72 @@
 
 (defun simpln (x y z)
   (oneargcheck x)
-  (cond ((onep1 (setq y (simpcheck (cadr x) z))) (addk -1 y))
-	((zerop1 y)
-	 (cond (radcanp (list '(%log simp) 0))
+  (setq y (simpcheck (cadr x) z))
+  (cond ((onep1 y) (addk -1 y))
+        ((zerop1 y)
+         (cond (radcanp (list '(%log simp) 0))
                ((not errorsw)
                 (merror (intl:gettext "log: encountered log(0).")))
-	       (t (throw 'errorsw t))))
+               (t (throw 'errorsw t))))
         ;; Check evaluation in floating point precision.
         ((flonum-eval (mop x) y))
         ;; Check evaluation in bigfloag precision.
         ((and (not (member 'simp (car x) :test #'eq))
               (big-float-eval (mop x) y)))
         ((eq y '$%e) 1)
-        ((and (mexptp y)
-              (eq (cadr y) '$%e)
-              (or (not (member ($csign (caddr y)) '($complex $imaginary)))
-                  (not (member ($csign (mul '$%i (caddr y))) 
-                               '($complex $imaginary)))))
-         ;; Simplify log(exp(x)) and log(exp(%i*x)), where x is a real
-         (caddr y))
-        ((and (mexptp y)
-              (ratnump (caddr y))
-              (or (equal 1 (cadr (caddr y)))
-                  (equal -1 (cadr (caddr y)))))
-         ;; Simplify log(z^(1/n)) -> log(z)/n, where n is an integer
-         (mul (caddr y)
-              (take '(%log) (cadr y))))
+        ((mexptp y)
+         (cond ((or (and $logexpand (eq $domain '$real))
+                    (member $logexpand '($all $super))
+                    (and (eq ($csign (cadr y)) '$pos)
+                         (not (member ($csign (caddr y))
+                                      '($complex $imaginary)))))
+                ;; Simplify log(x^a) -> a*log(x), where x > 0 and a is real
+                (mul (caddr y) (take '(%log) (cadr y))))
+               ((or (and (ratnump (caddr y))
+                         (or (eql 1 (cadr (caddr y)))
+                             (eql -1 (cadr (caddr y)))))
+                    (maxima-integerp (inv (caddr y))))
+                ;; Simplify log(z^(1/n)) -> log(z)/n, where n is an integer
+                (mul (caddr y)
+                     (take '(%log) (cadr y))))
+               ((and (eq (cadr y) '$%e)
+                     (or (not (member ($csign (caddr y))
+                                      '($complex $imaginary)))
+                         (not (member ($csign (mul '$%i (caddr y)))
+                                      '($complex $imaginary)))))
+                ;; Simplify log(exp(x)) and log(exp(%i*x)), where x is a real
+                (caddr y))
+               (t (eqtest (list '(%log) y) x))))
         ((ratnump y)
          ;; Simplify log(n/d)
-	 (cond ((equal (cadr y) 1) (simpln1 (list nil (caddr y) -1)))
-	       ((eq $logexpand '$super)
-		(simplifya (list '(mplus) (simplifya (list '(%log) (cadr y)) t)
-				 (simpln1 (list nil (caddr y) -1))) t))
-	       (t (eqtest (list '(%log) y) x))))
-        ((and (mexptp y)
-              (eq ($sign (cadr y)) '$pos)
-              (not (member ($csign (caddr y)) '($complex $imaginary))))
-         ;; Simplify log(x^a) -> a*log(x), where x > 0 and a is real
-         (mul (caddr y) (take '(%log) (cadr y))))
-	((and $logexpand (mexptp y)) (simpln1 y))
-	((and (member $logexpand '($all $super) :test #'eq) (mtimesp y))
-	 (prog (b)
-	    (setq y (cdr y))
-	    loop (setq b (cons (cond ((not (mexptp (car y)))
-				      (simplifya (list '(%log) (car y)) t))
-				     (t (simpln1 (car y)))) b))
-	    (cond ((null (setq y (cdr y)))
-		   (return (simplifya (cons '(mplus) b) t))))
-	    (go loop)))
+         (cond ((eql (cadr y) 1)
+                (mul -1 (take '(%log) (caddr y))))
+               ((eq $logexpand '$super)
+                (sub (take '(%log) (cadr y)) (take '(%log) (caddr y))))
+               (t (eqtest (list '(%log) y) x))))
+        ((and (member $logexpand '($all $super) :test #'eq)
+              (mtimesp y))
+         (do ((y (cdr y) (cdr y))
+              (b nil))
+             ((null y) (return (addn b t)))
+           (setq b (cons (take '(%log) (car y)) b))))
         ((and (member $logexpand '($all $super))
               (consp y)
               (member (caar y) '(%product $product)))
          (let ((new-op (if (eq (getcharn (caar y) 1) #\%) '%sum '$sum)))
            (simplifya `((,new-op) ((%log) ,(cadr y)) ,@(cddr y)) t)))
-	((and $lognegint (maxima-integerp y) (eq ($sign y) '$neg))
-	 (add (mul '$%i '$%pi) (take '(%log) (neg y))))
+        ((and $lognegint
+              (maxima-integerp y)
+              (eq ($sign y) '$neg))
+         (add (mul '$%i '$%pi) (take '(%log) (neg y))))
         ((taylorize (mop x) (second x)))
-	(t (eqtest (list '(%log) y) x))))
+        (t (eqtest (list '(%log) y) x))))
 
 (defun simpln1 (w)
   (simplifya (list '(mtimes) (caddr w)
 		   (simplifya (list '(%log) (cadr w)) t)) t))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; ----------------------------------------------------------------------------
 
 ;;; Implementation of the Square root function
 
@@ -2101,10 +2192,10 @@
             (return res))
            ((eq gr '$%i)
             (return (%itopot pot)))
-           ((and (numberp gr) (minusp gr) (mevenp pot))
+           ((and (realp gr) (minusp gr) (mevenp pot))
             (setq gr (- gr))
             (go cont))
-           ((and (numberp gr) (minusp gr) (moddp pot))
+           ((and (realp gr) (minusp gr) (moddp pot))
             (return (mul2 -1 (power (- gr) pot))))
            ((and (equal gr -1) (maxima-integerp pot) (mminusp pot))
             (setq pot (neg pot))
@@ -2174,14 +2265,15 @@
                      (equal (cadr gr) -1))
                  (equal -1 ($num gr)) ; only for -1
                  ;; Do not simplify for a complex base.
-                 (not (member ($csign gr) '($complex $imaginary))))
+                 (not (member ($csign gr) '($complex $imaginary)))
+                 (and (eq $domain '$real) $radexpand))
             ;; (-1/x)^a -> 1/(-x)^a for x negative
             ;; For all other cases (-1)^a/x^a
             (if (eq ($csign (setq w ($denom gr))) '$neg)
                 (return (inv (power (neg w) pot)))
                 (return (div (power -1 pot)
                              (power w pot)))))
-          ((not $radexpand) (go up)))
+           ((or (eq $domain '$complex) (not $radexpand)) (go up)))
      (return (do ((l (cdr gr) (cdr l)) (res (ncons 1)) (rad))
                  ((null l)
                   (cond ((equal res '(1))
@@ -2200,7 +2292,7 @@
                ;; Check with $csign to be more complete. This prevents wrong 
                ;; simplifications like sqrt(-z^2)->%i*sqrt(z^2) for z complex.
                (setq z ($csign (car l)))
-               (if (member z '($complex $imaginary)) 
+               (if (member z '($complex $imaginary))
                    (setq z '$pnz)) ; if appears complex, unknown sign
                (setq w (cond ((member z '($neg $nz) :test #'eq)
                               (setq rad (cons -1 rad))
@@ -2230,11 +2322,11 @@
      (setq w (testt (tms (simplifya y t) 1 (cons '(mtimes) res))))
      (cond (rulesw (setq rulesw nil res (cdr w))))
      (go start)
-
-  retno 
+     
+  retno
      (return (exptrl gr pot))
      
-  atgr  
+  atgr
      (cond ((zerop1 pot) (go retno))
            ((onep1 pot)
             (let ((y (mget gr '$numer)))
@@ -2319,17 +2411,22 @@
      (cond ((or (eq $radexpand '$all)
                 ;; b is an integer or an odd rational
                 (simplexpon pot)
-                (and (not (member ($csign (caddr gr)) '($complex $imaginary)))
+                (and (eq $domain '$complex)
+                     (not (member ($csign (caddr gr)) '($complex $imaginary)))
                          ;; z >= 0 and a not a complex
-                     (or (member (setq z ($csign (cadr gr))) '($pos $pz $zero))
+                     (or (member ($csign (cadr gr)) '($pos $pz $zero))
                          ;; -1 < a <= 1
                          (and (mnump (caddr gr))
                               (eq ($sign (sub 1 (take '(mabs) (caddr gr))))
                                   '$pos))))
+                (and (eq $domain '$real)
+                     (member ($csign (cadr gr)) '($pos $pz $zero)))
                 ;; (1/z)^a -> 1/z^a when z a constant complex
-                (and (equal (caddr gr) -1)
-                     (eq z '$complex)
-                     ($constantp (cadr gr)))
+                (and (eql (caddr gr) -1)
+                     (or (and $radexpand
+                              (eq $domain '$real))
+                         (and (eq ($csign (cadr gr)) '$complex)
+                              ($constantp (cadr gr)))))
                 ;; This does (1/z)^a -> 1/z^a. This is in general wrong.
                 ;; We switch this type of simplification on, when
                 ;; $ratsimpexpons is T. E.g. radcan sets this flag to T.
@@ -2337,69 +2434,44 @@
                 ;; this simplification.
                 (and $ratsimpexpons
                      (equal (caddr gr) -1))
-                (and (eq $domain '$real)
-                     (odnump (caddr gr))
-                     ;; Again not correct in general.
-                     ;; At first exclude the sqrt function.
-                     (not (alike1 pot '((rat simp) 1 2)))
-                     (not (alike1 pot '((rat simp) -1 2)))))
+                (and $radexpand
+                     (eq $domain '$real)
+                     (odnump (caddr gr))))
             ;; Simplify (z^a)^b -> z^(a*b)
-            (setq pot (mult pot (caddr gr)) gr (cadr gr)))
+            (setq pot (mul pot (caddr gr))
+                  gr (cadr gr)))
            ((and (eq $domain '$real)
                  (free gr '$%i)
                  $radexpand
                  (not (decl-complexp (cadr gr)))
                  (evnump (caddr gr)))
             ;; Simplify (x^a)^b -> abs(x)^(a*b)
-            (setq pot (mult pot (caddr gr)) gr (radmabs (cadr gr))))
-           ((and (mminusp (caddr gr))
-                 ;; Again not correct in general.
-                 ;; At first exclude the sqrt function.
-                 (not (alike1 pot '((rat simp) 1 2)))
-                 (not (alike1 pot '((rat simp) -1 2))))
+            (setq pot (mul pot (caddr gr))
+                  gr (radmabs (cadr gr))))
+           ((and $radexpand
+                 (eq $domain '$real)
+                 (mminusp (caddr gr)))
             ;; Simplify (1/z^a)^b -> 1/(z^a)^b
             (setq pot (neg pot)
-                  gr (list (car gr) (cadr gr) (neg (caddr gr)))))
+                  gr (power (cadr gr) (neg (caddr gr)))))
            (t (go up)))
      (go cont)))
 
+;; Basically computes log of m base b.  Except if m is not a power
+;; of b, we return nil.  m is a positive integer and base an integer
+;; not equal to +/-1.
 (defun exponent-of (m base)
-  ;; Basically computes log of m base b.  Except if m is not a power
-  ;; of b, we return nil.
-
-  ;; Give up on the cases we can't handle.
-  (unless (and (mnump m)
-	       (ratgreaterp m 0)
-	       (integerp base)
-	       (not (eql (abs base) 1)))
-    (return-from exponent-of nil))
-  (cond ((ratgreaterp 1 m)
-	 ;; m < 1, so change the problem to finding the exponent for
-	 ;; 1/m.
-	 (let ((expo (exponent-of (inv m) base)))
-	   (when expo
-	     (- expo))))
-	((ratnump m)
-	 ;; exponent-of doesn't know how to handle maxima rationals,
-	 ;; so make it a Lisp rational.
-	 (exponent-of (/ (second m) (third m)) base))
-	(t
-	 ;; Main case.  Just compute base^k until base^k >= m.  Then
-	 ;; check if they're equal.  If so, we have the exponent.
-	 ;; Otherwise, give up.
-	 (let ((expo 0))
-	   (when (integerp m)
-	     (loop
-		(multiple-value-bind (q r)
-		    (floor m base)
-		  (cond ((zerop r)
-			 (setf m q)
-			 (incf expo))
-			(t
-			 (return nil))))))
-	   (if (zerop expo)
-	       nil
-	       expo)))))
+  ;; Just compute base^k until base^k >= m.  Then check if they're equal.
+  ;; If so, we have the exponent.  Otherwise, give up.
+  (let ((expo 0))
+    (loop
+      (multiple-value-bind (q r)
+          (floor m base)
+        (cond ((zerop r)
+               (setf m q)
+               (incf expo))
+              (t (return nil)))))
+    (if (zerop expo) nil expo)))
 
 (defun timesin (x y w)                  ; Multiply X^W into Y
   (prog (fm temp z check u expo)
@@ -2456,10 +2528,10 @@
                           (go const))
                          ((onep1 w)
                           (cond ((mtimesp (car x))
-                                 ;; A base which is a mtimes expression.
-                                 ;; Remove the factor from the lists of products.
+                                 ;; A base which is a mtimes expression. Remove
+                                 ;; the factor from the lists of products.
                                  (rplacd fm (cddr fm))
-                                 ;; Multiply the factors of the base with 
+                                 ;; Multiply the factors of the base with
                                  ;; the list of all remaining products.
                                  (setq rulesw t)
                                  (return (muln (nconc y (cdar x)) t)))
@@ -2472,59 +2544,46 @@
                         (or (ratnump (car x))
                             (and (integerp (car x))
                                  (not (onep (car x))))))
-                   ;; Multiplying a^k * rational.
-                   (let* ((numerator (if (integerp (car x)) 
-                                         (car x)
-                                         (second (car x))))
-                          (denom (if (integerp (car x)) 
-                                     1
-                                     (third (car x))))
-                          (sgn (signum numerator)))
-                     (setf expo (exponent-of (abs numerator) (second (cadr fm))))
-                     (when expo
-                       ;; We have a^m*a^k.
-                       (setq temp (power (second (cadr fm)) 
-                                         (add (third (cadr fm)) expo)))
-                       ;; Set fm to have 1/denom term.
-                       (setq x (mul sgn
-                                    (car y)
-                                    (div (div (mul sgn numerator)
-                                              (power (second (cadr fm))
-                                                     expo))
-                                         denom)))
-                       (setf y (rplaca y 1))
-                       ;; Add in the a^(m+k) term.
-                       (rplacd fm (cddr fm))
-                       (rplacd fm (cons temp (cdr fm)))
-                       (setq temp x
-                             x (list x 1)
-                             w 1
-                             fm y)
-                       (go start))
-                     (setf expo (exponent-of (inv denom) (second (cadr fm))))
-                     (when expo
-                       ;; We have a^(-m)*a^k.
-                       (setq temp (power (second (cadr fm)) 
-                                         (add (third (cadr fm)) expo)))
-                       ;; Set fm to have the numerator term.
-                       (setq x (mul (car y)
-                                    (div numerator
-                                         (div denom
-                                              (power (second (cadr fm)) 
-                                                     (- expo))))))
-                       (setf y (rplaca y 1))
-                       ;; Add in the a^(k-m) term.
-                       (rplacd fm (cddr fm))
-                       (rplacd fm (cons temp (cdr fm)))
-                       (setq temp x
-                             x (list x 1)
-                             w 1
-                             fm y)
-                       (go start))
-                     ;; Next term in list of products.
-                     (setq fm (cdr fm))
+                   ;; Multiplying bas^k * num/den
+                   (let ((num (num1 (car x)))
+                         (den (denom1 (car x)))
+                         (bas (second (cadr fm))))
+                     (cond ((and (integerp bas)
+                                 (not (eql 1 (abs bas)))
+                                 (setq expo (exponent-of (abs num) bas)))
+                            ;; We have bas^m*bas^k = bas^(k+m).
+                            (setq temp (power bas
+                                              (add (third (cadr fm)) expo)))
+                            ;; Set fm to have 1/denom term.
+                            (setq x (mul (car y)
+                                         (div (div num
+                                                   (exptrl bas expo))
+                                              den))))
+                           ((and (integerp bas)
+                                 (not (eql 1 (abs bas)))
+                                 (setq expo (exponent-of den bas)))
+                            (setq expo (- expo))
+                            ;; We have bas^(-m)*bas^k = bas^(k-m).
+                            (setq temp (power bas
+                                              (add (third (cadr fm)) expo)))
+                            ;; Set fm to have the numerator term.
+                            (setq x (mul (car y)
+                                         (div num
+                                              (div den
+                                                   (exptrl bas (- expo)))))))
+                           (t
+                            ;; Next term in list of products.
+                            (setq fm (cdr fm))
+                            (go start)))
+                     ;; Add in the bas^(k+m) term or bas^(k-m)
+                     (setf y (rplaca y 1))
+                     (rplacd fm (cddr fm))
+                     (rplacd fm (cons temp (cdr fm)))
+                     (setq temp x
+                           x (list x 1)
+                           w 1
+                           fm y)
                      (go start)))
-                  
                   ((and (not (atom (car x)))
                         (eq (caar (car x)) 'mabs)
                         (equal (cadr x) 1)
@@ -2573,7 +2632,7 @@
                         (equal (caddr (cadr fm)) -1)
                         (integerp (cadr x))
                         (> (cadr x) 1)
-                        (alike1 (cadadr (cadr fm)) (car x))                        
+                        (alike1 (cadadr (cadr fm)) (car x))
                         (not (member ($csign (cadadr (cadr fm)))
                                      '($complex imaginary))))
                    ;; 1/abs(x)*x^n -> x^(n-2)*abs(x), where n an integer.
@@ -2645,51 +2704,37 @@
                  (not (onep1 (car y)))
                  (or (integerp (car y))
                      (ratnump (car y))))
-            ;; Multiplying x^w * rational or integer.
-            (let* ((numerator (if (integerp (car y)) 
-                                 (car y)
-                                 (second (car y))))
-                   (denom (if (integerp (car y)) 
-                              1
-                              (third (car y)))))
-              (setf expo (exponent-of (abs numerator) (car x)))
-              (when expo
-                ;; We have a^m*a^k.
-                (setq temp (power (car x)
-                                  (add (cadr x) expo)))
-                ;; Set fm to have 1/denom term.
-                (setq x (div (div numerator
-                                  (power (car x) expo))
-                             denom))
-                (setf y (rplaca y 1))
-                ;; Add in the a^(m+k) term.
-                (rplacd fm (cons temp (cdr fm)))
-                (setq temp x
-                      x (list x 1)
-                      w 1
-                      fm y)
-                (go start))
-              (setf expo (exponent-of (inv denom) (car x)))
-              (when expo
-                ;; We have a^(-m)*a^k.
-                (setq temp (power (car x) 
-                                  (add (cadr x) expo)))
-                ;; Set fm to have the numerator term.
-                (setq x (div numerator
-                             (div denom
-                                  (power (car x) 
-                                         (- expo)))))
-                (setf y (rplaca y 1))
-                ;; Add in the a^(k-m) term.
-                (rplacd fm (cons temp (cdr fm)))
-                (setq temp x
-                      x (list x 1)
-                      w 1
-                      fm y)
-                (go start))
-              ;; The rational doesn't contain any (simple) powers of
-              ;; the exponential term.  We're done.
-              (return (cdr (rplacd fm (cons temp (cdr fm)))))))
+            ;; Multiplying bas^k * num/den.
+            (let ((num (num1 (car y)))
+                  (den (denom1 (car y)))
+                  (bas (car x)))
+              (cond ((and (integerp bas)
+                          (not (eql 1 (abs bas)))
+                          (setq expo (exponent-of (abs num) bas)))
+                     ;; We have bas^m*bas^k.
+                     (setq temp (power bas (add (cadr x) expo)))
+                     ;; Set fm to have 1/denom term.
+                     (setq x (div (div num (exptrl bas expo)) den)))
+                    ((and (integerp bas)
+                          (not (eql 1 (abs bas)))
+                          (setq expo (exponent-of den bas)))
+                     (setq expo (- expo))
+                     ;; We have bas^(-m)*bas^k.
+                     (setq temp (power bas (add (cadr x) expo)))
+                     ;; Set fm to have the numerator term.
+                     (setq x (div num (div den (exptrl bas (- expo))))))
+                    (t
+                     ;; The rational doesn't contain any (simple) powers of
+                     ;; the exponential term.  We're done.
+                     (return (cdr (rplacd fm (cons temp (cdr fm)))))))
+              ;; Add in the a^(m+k) or a^(k-m) term.
+              (setf y (rplaca y 1))
+              (rplacd fm (cons temp (cdr fm)))
+              (setq temp x
+                    x (list x 1)
+                    w 1
+                    fm y)
+              (go start)))
            ((and (maxima-constantp (car x))
                  (do ((l (cdr fm) (cdr l)))
                      ((null (cdr l)))

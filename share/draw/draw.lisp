@@ -40,8 +40,6 @@
 
 (defvar $draw_compound t)
 
-(defvar $draw_renderer '$gnuplot)
-
 (defvar *windows-OS* (string= *autoconf-win32* "true"))
 
 (defmacro write-font-type ()
@@ -110,20 +108,14 @@
     (when (> xx xmax) (setf xmax xx))))
 
 (defmacro check-extremes-y ()
-  '(let ()
+  '(when (numberp yy)
     (when (< yy ymin) (setf ymin yy))
     (when (> yy ymax) (setf ymax yy))))
 
 (defmacro check-extremes-z ()
-  '(let ()
+  '(when (numberp zz)
     (when (< zz zmin) (setf zmin zz))
     (when (> zz zmax) (setf zmax zz))))
-
-
-
-
-
-
 
 ;; Controls whether the actual graphics object must
 ;; be plotted against the primary or the secondary axes,
@@ -137,10 +129,6 @@
            (if (get-option '$yaxis_secondary)
                "y2"
                "y1")))
-
-
-
-
 
 (defstruct gr-object
    name command groups points)
@@ -1182,19 +1170,20 @@
          (x-step (/ (- xmax xmin) ($float nticks) 2))
          (ymin most-positive-double-float)
          (ymax most-negative-double-float)
+         (*plot-realpart* *plot-realpart*)
          x-samples y-samples yy result pltcmd result-array)
+    (setq *plot-realpart* (get-option '$draw_realpart))
     (setq fcn (coerce-float-fun fcn `((mlist) ,var)))
     (if (< xmax xmin)
        (merror "draw2d (explicit): illegal range"))
     (flet ((fun (x) (funcall fcn x)))
-      (dotimes (k (1+ (* 2 nticks)))
-        (let* ((x (+ xmin (* k x-step)))
-               (y (fun x)))
-          (when (numberp y)    ; check for non numeric y, as in 1/0
-             (push x x-samples)
-             (push y y-samples)  ) ))
+        (dotimes (k (1+ (* 2 nticks)))
+          (let ((x (+ xmin (* k x-step))))
+            (push x x-samples)
+            (push (fun x) y-samples)))
       (setf x-samples (nreverse x-samples))
       (setf y-samples (nreverse y-samples))
+
       ;; For each region, adaptively plot it.
       (do ((x-start x-samples (cddr x-start))
            (x-mid (cdr x-samples) (cddr x-mid))
@@ -1210,12 +1199,9 @@
                                            depth 1e-5)))
           (when (not (null result))
             (setf sublst (cddr sublst)))
-          ;; clean non numeric pairs
           (do ((lst sublst (cddr lst)))
               ((null lst) 'done)
-            (when (numberp (second lst))
-              (setf result (append result (list (first lst) (second lst)))))))))
-
+            (setf result (append result (list (first lst) (second lst))))))))
       (cond ((null (get-option '$filled_func))
                (cond
                  ((> *draw-transform-dimensions* 0)
@@ -1280,7 +1266,8 @@
                   :points  (list result-array )))
             (t
                (let (fcn2 yy2 (count -1))
-                  (setf result-array (make-array (* (/ (length result) 2) 3) :element-type 'flonum))
+                  (setf result-array (make-array (* (/ (length result) 2) 3)
+                                                 :element-type 'flonum))
                   (setq fcn2 (coerce-float-fun (get-option '$filled_func) `((mlist), var)))
                   (flet ((fun (x) (funcall fcn2 x)))
                     (do ((xx result (cddr xx)))
@@ -1301,7 +1288,7 @@
                   :name   'explicit
                   :command pltcmd
                   :groups '((3 0))  ; numbers are sent to gnuplot in groups of 3
-                  :points  (list result-array ))))  ))
+                  :points  (list result-array))))  ))
 
 
 
@@ -1615,6 +1602,7 @@
 ;;     line_type
 ;;     color
 ;;     enhanced3d
+;;     wired_surface
 ;; Some functions and macros are defined in grcommon.lisp
 (defun implicit3d (expr par1 xmin xmax par2 ymin ymax par3 zmin zmax)
   (let ((xmin ($float xmin))
@@ -1690,6 +1678,7 @@
 ;;     color
 ;;     key
 ;;     enhanced3d
+;;     wired_surface
 ;;     surface_hide
 ;;     transform
 (defun explicit3d (fcn par1 minval1 maxval1 par2 minval2 maxval2)
@@ -1710,11 +1699,13 @@
          (ymax most-negative-double-float)
          (zmin most-positive-double-float)
          (zmax most-negative-double-float)
+         (*plot-realpart* *plot-realpart*)
          (nx (+ xu_grid 1))
          (ny (+ yv_grid 1))
          ($numer t)
          (count -1)
          ncols result)
+    (setq *plot-realpart* (get-option '$draw_realpart))
     (check-enhanced3d-model "explicit" '(0 2 3 99))
     (when (= *draw-enhanced3d-type* 99)
        (update-enhanced3d-expression (list '(mlist) par1 par2)))
@@ -1776,6 +1767,7 @@
 ;;     color
 ;;     key
 ;;     enhanced3d
+;;     wired_surface
 ;;     transform
 (defun elevation_grid (mat x0 y0 width height)
   (let ( (fx0 ($float x0))
@@ -1862,6 +1854,7 @@
 ;;     color
 ;;     key
 ;;     enhanced3d
+;;     wired_surface
 ;;     transform
 (defun mesh (&rest row)
   (let (result xx yy zz
@@ -2040,9 +2033,11 @@
          (xmax most-negative-double-float)
          (ymin most-positive-double-float)
          (ymax most-negative-double-float)
+         (*plot-realpart* *plot-realpart*)
          (tt ($float parmin))
          (eps (/ (- tmax tmin) (- nticks 1)))
          result f1 f2 xx yy)
+    (setq *plot-realpart* (get-option '$draw_realpart))
     (if (< tmax tmin)
        (merror "draw2d (parametric): illegal range"))
     (setq f1 (coerce-float-fun xfun `((mlist), par)))
@@ -2114,6 +2109,7 @@
 ;;     color
 ;;     key
 ;;     enhanced3d
+;;     wired_surface
 ;; This object is constructed as a parametric surface in 3d.
 ;; Functions are defined in format r=r(azimuth,zenith),
 ;; where, normally, azimuth is an angle in [0,2*%pi] and zenith in [0,%pi]
@@ -2143,6 +2139,8 @@
 ;;     line_type
 ;;     color
 ;;     key
+;;     enhanced3d
+;;     wired_surface
 ;; This object is constructed as a parametric surface in 3d.
 ;; Functions are defined in format z=z(radius,azimuth), where,
 ;; normally, azimuth is an angle in [0,2*%pi] and r any real
@@ -2186,10 +2184,12 @@
          (ymax most-negative-double-float)
          (zmin most-positive-double-float)
          (zmax most-negative-double-float)
+         (*plot-realpart* *plot-realpart*)
          (tt tmin)
          (eps (/ (- tmax tmin) (- nticks 1)))
          (count -1)
          ncols result f1 f2 f3 xx yy zz)
+    (setq *plot-realpart* (get-option '$draw_realpart))
     (check-enhanced3d-model "parametric" '(0 1 3 99))
     (when (= *draw-enhanced3d-type* 99)
        (update-enhanced3d-expression (list '(mlist) par1)))
@@ -2248,6 +2248,7 @@
 ;;     color
 ;;     key
 ;;     enhanced3d
+;;     wired_surface
 ;;     surface_hide
 ;;     transform
 (defun parametric_surface (xfun yfun zfun par1 par1min par1max par2 par2min par2max)
@@ -2264,12 +2265,14 @@
          (ymax most-negative-double-float)
          (zmin most-positive-double-float)
          (zmax most-negative-double-float)
+         (*plot-realpart* *plot-realpart*)
          (ueps (/ (- umax umin) (- ugrid 1)))
          (veps (/ (- vmax vmin) (- vgrid 1)))
          (nu (+ ugrid 1))
          (nv (+ vgrid 1))
          (count -1)
          ncols result f1 f2 f3 xx yy zz uu vv)
+    (setq *plot-realpart* (get-option '$draw_realpart))
     (check-enhanced3d-model "parametric_surface" '(0 2 3 99))
     (when (= *draw-enhanced3d-type* 99)
        (update-enhanced3d-expression (list '(mlist) par1 par2)))
@@ -2334,6 +2337,7 @@
 ;;     color
 ;;     key
 ;;     enhanced3d
+;;     wired_surface
 ;;     surface_hide
 ;;     transform
 (defmacro check-tube-extreme (ex cx cy cz circ)
@@ -2856,6 +2860,7 @@
             (format nil "set xlabel '~a'~%" (get-option '$xlabel))
             (format nil "set ylabel '~a'~%" (get-option '$ylabel))
             (format nil "set zlabel '~a'~%" (get-option '$zlabel))
+            (format nil "set datafile missing 'NIL'~%")
             (if (get-option '$logx)
                (format nil "set logscale x~%")
                (format nil "unset logscale x~%"))
@@ -2925,7 +2930,10 @@
                                (otherwise ""))))
             (if (not (get-option '$axis_3d))
                 (format nil "set border 0~%"))
-            (format nil "set pm3d at s depthorder explicit~%")
+            (when (not (null (get-option '$enhanced3d)))
+              (if (null (get-option '$wired_surface))
+                (format nil "set pm3d at s depthorder explicit~%")
+                (format nil "set style line 1 lt 1 lw 1 lc rgb '#000000'~%set pm3d at s depthorder explicit hidden3d 1~%") ))
             (if (get-option '$surface_hide)
                (format nil "set hidden3d nooffset~%"))
             (if (get-option '$xyplane)
@@ -3022,7 +3030,6 @@
 
     (setf isanimatedgif
           (equal (get-option '$terminal) '$animated_gif))
-
     (setf
        gfn (plot-temp-file (get-option '$gnuplot_file_name))
        dfn (plot-temp-file (get-option '$data_file_name)))
@@ -3039,6 +3046,13 @@
     ; when one multiplot window is active, change of terminal is not allowed
     (if (not *multiplot-is-active*)
     (case (get-option '$terminal)
+        ($dumb (format cmdstorage "set terminal dumb size ~a, ~a"
+                           (round (/ (first (get-option '$dimensions)) 10))
+                           (round (/ (second (get-option '$dimensions)) 10))))
+        ($dumb_file (format cmdstorage "set terminal dumb size ~a, ~a~%set out '~a.dumb'"
+                           (round (/ (first (get-option '$dimensions)) 10))
+                           (round (/ (second (get-option '$dimensions)) 10))
+                           (get-option '$file_name)))
         ($png (format cmdstorage "set terminal png enhanced truecolor ~a size ~a, ~a ~a~%set out '~a.png'"
                            (write-font-type)
                            (round (first (get-option '$dimensions)))
@@ -3182,12 +3196,29 @@
                  (k (length vect))
                  (ncol (caar glis))
                  (l 0)
-                 (m (cadar glis)))
+                 (m (cadar glis))
+                 (non-numeric-region nil)
+                 coordinates)
              (cond
                 ((= m 0)     ; no blank lines
                    (do ((cont 0 (+ cont ncol)))
                        ((= cont k) 'done)
-                     (write-subarray (subseq vect cont (+ cont ncol)) datastorage))  )
+                     (setf coordinates (subseq vect cont (+ cont ncol)))
+                     ; control of non numeric y values,
+                     ; code related to draw_realpart
+                     (cond
+                       (non-numeric-region
+                         (when (numberp (aref coordinates 1))
+                           (setf non-numeric-region nil)
+                           (write-subarray coordinates datastorage) ))
+                       (t
+                         (cond
+                           ((numberp (aref coordinates 1))
+                             (write-subarray coordinates datastorage))
+                           (t
+                             (setf non-numeric-region t)
+                             (format datastorage "~%")))))) )
+
                 (t           ; blank lines every m lines
                    (do ((cont 0 (+ cont ncol)))
                        ((= cont k) 'done)
@@ -3225,24 +3256,27 @@
                        (equal (get-option '$terminal) '$pdfcairo))
                 (format cmdstorage "unset output~%"))
              (close cmdstorage)
-
              ; get the plot
              (cond
-                (*windows-OS*
-                   ($system (if (equal (get-option '$terminal) '$screen)
-                                   (format nil "~a ~a"
-                                               $gnuplot_command
-                                               (format nil $gnuplot_view_args gfn))
-                                   (format nil "~a \"~a\"" 
-                                               $gnuplot_command
-                                               gfn))) )
-                (t  ; non windows operating system
+                ; connect to gnuplot via pipes
+                ((and (not *windows-OS*)
+                      (member (get-option '$terminal) '($screen $aquaterm $wxt))
+                      (equal $draw_renderer '$gnuplot_pipes))
                    (check-gnuplot-process)
                    (when (not *multiplot-is-active*) ; not in a one window multiplot
                      (send-gnuplot-command "unset output"))
                    (send-gnuplot-command "reset")
                    (send-gnuplot-command
-                        (format nil "load '~a'" gfn))  ))))
+                        (format nil "load '~a'" gfn)))
+                ; call gnuplot via system command
+                (t
+                  ($system (if (member (get-option '$terminal) '($screen $aquaterm $wxt))
+                                   (format nil "~a ~a"
+                                               $gnuplot_command
+                                               (format nil $gnuplot_view_args gfn))
+                                   (format nil "~a \"~a\"" 
+                                               $gnuplot_command
+                                               gfn)))))))
 
     ; the output is a simplified description of the scene(s)
     (reverse scenes-list)) )
@@ -3255,7 +3289,8 @@
 
 ;; Equivalent to draw3d(opt & obj)
 (defun $draw3d (&rest args)
-  (cond ((equal $draw_renderer '$gnuplot)
+  (cond ((or (equal $draw_renderer '$gnuplot)
+             (equal $draw_renderer '$gnuplot_pipes))
            ($draw (cons '($gr3d) args)))
         ((equal $draw_renderer '$vtk)
            (apply 'vtk3d args))

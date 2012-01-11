@@ -15,8 +15,6 @@
 
 (macsyma-module trans4)
 
-(transl-module trans4)
-
 ;;; These are translation properties for various operators.
 
 (def%tr mnctimes (form)
@@ -117,10 +115,10 @@
 	 (destructuring-let ((((nil ssymbol) (nil (nil definition) nil)) (cdr form)))
 	   (unless (eq (car definition) 'lambda)
 	     (tr-format
-	      "~%`patch-up-meval-in-fset': Not a lambda expression:~%~A"
+	      "PATCH-UP-MEVAL-IN-FSET: not a lambda expression: ~A~%"
 	      definition)
 	     (barfo))
-	   (tr-format "~%Translating rule or match ~:M" ssymbol)
+	   (tr-format (intl:gettext "note: translating rule or match ~:M ...~%") ssymbol)
 	   (setq definition (lisp->lisp-tr-lambda definition))
 	   (if (null definition)
 	       form
@@ -149,12 +147,12 @@
 	(if (symbolp op)
 	    (funcall (or (get op 'tr-lisp->lisp) #'tr-lisp->lisp-default)
 		     exp)
-	    (progn (tr-tell "Punting: non-symbolic operator")
+	    (progn (tr-format (intl:gettext "error: found a non-symbolic operator; I give up.~%"))
 		   (throw 'lisp->lisp-tr-lambda ()))))))
 
 (defun tr-lisp->lisp-default (exp)
   (cond ((macsyma-special-op-p (car exp))
-	 (tr-tell "Punting: unhandled special operator ~:@M" (car exp))
+	 (tr-format (intl:gettext "error: unhandled special operator ~:@M~%") (car exp))
 	 (throw 'lisp->lisp-tr-lambda ()))
 	('else
 	 (tr-lisp->lisp-fun exp))))
@@ -227,7 +225,7 @@
 	 ;; and appears like a useless double-evaluation of arguments.
 	 form)
 	('else
-	 (tr-tell "Punting: Unbound `meval' found!")
+	 (tr-format (intl:gettext "error: found unbound MEVAL; I give up.~%"))
 	 (throw 'lisp->lisp-tr-lambda ()))))
 
 (defun-prop (is tr-lisp->lisp) (form)
@@ -236,5 +234,5 @@
 	      (eq (car form) 'quote))
 	 (cdr (translate `(($is) ,(cadr form)))))
 	('else
-	 (tr-tell "Punting: Unbound `is' found!")
+	 (tr-format (intl:gettext "error: found unbound IS; I give up.~%"))
 	 (throw 'lisp->lisp-tr-lambda ()))))

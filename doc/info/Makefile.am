@@ -33,9 +33,10 @@ endif
 SUBDIRS = $(ES_DIR) $(ES_DIR_UTF8) $(PT_DIR) $(PT_DIR_UTF8) $(PT_BR_DIR) $(PT_BR_DIR_UTF8) $(DE_DIR) $(DE_DIR_UTF8)
 
 info_TEXINFOS = maxima.texi
-maxima_TEXINFOS = include-maxima.texi Introduction.texi Help.texi Command.texi Operators.texi \
-  Expressions.texi Simplification.texi Plotting.texi Input.texi \
-  Floating.texi Contexts.texi Polynomials.texi Constants.texi \
+maxima_TEXINFOS = include-maxima.texi Introduction.texi Help.texi Command.texi \
+  DataTypes.texi Constants.texi Operators.texi Expressions.texi \
+  Evaluation.texi Simplification.texi MathFunctions.texi Database.texi \
+  Plotting.texi Input.texi Floating.texi Contexts.texi Polynomials.texi \
   Logarithms.texi Trigonometric.texi Special.texi \
   Limits.texi Differentiation.texi Integration.texi Equations.texi \
   Differential.texi Numerical.texi \
@@ -52,7 +53,7 @@ maxima_TEXINFOS = include-maxima.texi Introduction.texi Help.texi Command.texi O
   implicit_plot.texi interpol.texi lbfgs.texi romberg.texi grobner.texi\
   contrib_ode.texi graphs.texi category-macros.texi lapack.texi \
   asympa.texi Deleted.texi minpack.texi cobyla.texi drawdf.texi fractals.texi finance.texi\
-  defstruct.texi
+  bernstein.texi to_poly_solve.texi defstruct.texi
 
 figurefiles = \
 figures/introduction1.gif\

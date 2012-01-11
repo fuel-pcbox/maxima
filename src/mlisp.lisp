@@ -1145,8 +1145,10 @@ wrapper for this."
 	((eq x '$dotassoc) (cput 'mnctimes y 'associative))
 	((eq x 'modulus)
 	 (cond ((null y))
-	       ((integerp y)
-	        (if (or (not (primep y)) (member y '(1 0 -1)))
+	       ((and (integerp y) (plusp y))
+	        ;; modulus must be an integer > 0. Give a warning if not
+	        ;; a prime number.
+	        (if (not (primep y))
 	            (mtell (intl:gettext "warning: assigning ~:M, a non-prime, to 'modulus'~&") y)))
 	       (t (mseterr x y))))
 	((eq x '$setcheck)
@@ -1394,7 +1396,7 @@ wrapper for this."
 	  ((nonsymchk (cadr l) '$declare))
 	  (t (setq vars (declsetup (car l) '$declare))))
     (cond (flag)
-	  ((member (cadr l) '($evfun $evflag $special $nonarray $bindtest) :test #'eq)
+	  ((member (cadr l) '($evfun $evflag $nonarray $bindtest) :test #'eq)
 	   (declare1 vars t (stripdollar (cadr l)) nil))
 	  ((eq (cadr l) '$noun)
 	   (dolist (var vars) (alias (getopr var) ($nounify var))))
@@ -1426,8 +1428,6 @@ wrapper for this."
        (dolist (1-char (coerce var 'list))
          (add2lnc 1-char *alphabet*)))
 
-	  ((eq prop 'special)(proclaim (list 'special var))
-	   (fluidize var))
 	  (mpropp
 	   (if (and (member prop '($scalar $nonscalar) :test #'eq)
 		    (mget var (if (eq prop '$scalar) '$nonscalar '$scalar)))
@@ -1467,7 +1467,7 @@ wrapper for this."
 	  ((member (cadr l) '($alias $noun) :test #'eq) (remalias1 vars (eq (cadr l) '$alias)))
 	  ((eq (cadr l) '$matchdeclare) (remove1 vars 'matchdeclare t t nil))
 	  ((eq (cadr l) '$rule) (remrule vars))
-	  ((member (cadr l) '($evfun $evflag $special $nonarray $bindtest
+	  ((member (cadr l) '($evfun $evflag $nonarray $bindtest
 			    $autoload $assign) :test #'eq)
 	   (remove1 vars (stripdollar (cadr l)) nil t nil))
 	  ((member (cadr l) '($mode $modedeclare) :test #'eq) (remove1 vars 'mode nil 'foo nil))
@@ -1565,7 +1565,7 @@ wrapper for this."
             (not (mgetl var '($nonscalar $scalar $mainvar $numer
                                         matchdeclare $atomgrad atvalues)))
             (not (getl var '(evfun evflag translated nonarray bindtest
-                                   sp2 operators opers special data autoload mode)))))
+                                   sp2 operators opers data autoload mode)))))
 	   (not (member var *builtin-$props* :test #'equal)))
       (delete var $props :count 1 :test #'equal)))
 
@@ -1700,16 +1700,19 @@ wrapper for this."
 
 	     u))))
 
-
 (defmspec $array (x)
   (setq x (cdr x))
   (cond ($use_fast_arrays
-         (mset (car x) 
-               (apply '$make_array '$any 
-                      (mapcar #'(lambda (dim)
+         (let ((type (if (symbolp (cadr x)) (cadr x) '$any))
+               (name (car x))
+               (diml (if (symbolp (cadr x)) (cddr x) (cdr x))))
+           (mset name
+                 (apply '$make_array
+                        type
+                        (mapcar #'(lambda (dim)
                                   ;; let make_array catch bad vals
-                                  (add 1 (meval dim)))
-                              (cdr x)))))
+                                    (add 1 (meval dim)))
+                                diml)))))
 	((symbolp (car x))
 	 (let ((compp (assoc (cadr x) '(($complete . t) ($integer . fixnum) ($fixnum . fixnum)
 					($float . flonum) ($flonum . flonum)))))
@@ -1734,10 +1737,11 @@ wrapper for this."
 		    (merror (intl:gettext "array: all dimensions must be integers."))))
 	     (setq diml (mapcar #'1+ diml))
 	     (setq new (if compp fun (gensym)))
-	     (setf (symbol-array new) (make-array diml :initial-element (case compp
-									   (fixnum 0)
-									   (flonum 0.0)
-									   (otherwise munbound))))
+	     (setf (symbol-array new) 
+	           (make-array diml :initial-element (case compp
+	                                               (fixnum 0)
+	                                               (flonum 0.0)
+	                                               (otherwise munbound))))
 	     (when (or funp (arrfunp fun))
 	       (fillarray new (list (if (eq compp 'fixnum) fixunbound flounbound))))
 	     (cond ((null (setq old (mget fun 'hashar)))
@@ -1869,10 +1873,12 @@ wrapper for this."
 		       (prog2
 			   (setq mqapplyp t l (cdr l))
 			   nil)))
-
 		 ((and (not mqapplyp)
-		       (or (not (boundp fun)) (not (or (mxorlistp (setq ary (symbol-value fun)))
-						       (eq (ml-typep ary) 'array)))))
+		       (or (not (boundp fun))
+		           (not (or (mxorlistp (setq ary (symbol-value fun)))
+		                    (arrayp ary)
+		                    (typep ary 'hash-table)
+		                    (eq (type-of ary) 'mgenarray)))))
 		  (if (member fun '(mqapply $%) :test #'eq) (merror (intl:gettext "assignment: cannot assign to ~M") l))
 		  (add2lnc fun $arrays)
 		  (setq ary (gensym))
@@ -1882,8 +1888,9 @@ wrapper for this."
 		  (setf (aref (symbol-array ary) 1) 0)
 		  (setf (aref (symbol-array ary) 2) (length (cdr l)))
 		  (arrstore l r))
-
-		 ((eq (ml-typep ary) 'array)
+	         ((or (arrayp ary)
+	              (typep ary 'hash-table)
+	              (eq (type-of ary) 'mgenarray))
 		  (arrstore-extend ary (mevalargs (cdr l)) r))
 		 ((or (eq (caar ary) 'mlist) (= (length l) 2))
 		  (cond ((eq (caar ary) '$matrix)
@@ -2372,7 +2379,7 @@ wrapper for this."
 
 ;; evflag properties
 (mapc #'(lambda (x) (putprop x t 'evflag))
-      '($exponentialize $%emode $demoivre $logexpand $logarc $lognumer
+      '($exponentialize $%emode $demoivre $logexpand $logarc
 	$radexpand $keepfloat $listarith $float $ratsimpexpons $ratmx
 	$simp $simpsum $simpproduct $algebraic $ratalgdenom $factorflag $ratfac
 	$infeval $%enumer $programmode $lognegint $logabs $letrat

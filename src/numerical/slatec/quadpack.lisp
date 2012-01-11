@@ -107,7 +107,7 @@
 	     (work (make-array lenw :element-type 'flonum))
 	     (iwork (make-array limit :element-type 'f2cl-lib:integer4))
 	     (f (get-integrand fun var))
-	     (infinity (case inf-type
+	     (infinity (ecase inf-type
 			 ((1 $inf)
 			  ;; Interval is [bound, infinity]
 			  1)
@@ -274,6 +274,40 @@
 	  ((mequal) $epsabs ,epsabs)
 	  ((mequal) $limit ,limit))))))
 
+(defun quad-qagp (fun var a b points
+		  &key (epsrel 1e-8) (epsabs 0.0) (limit 200))
+  (quad_argument_check fun var a b)
+  (let* ((npts2 (+ 2 (length (cdr points))))
+	 (p (make-array npts2 :element-type 'flonum))
+	 (leniw (max limit (- (* 3 npts2) 2)))
+	 (lenw (- (* 2 leniw) npts2))
+	 (work (make-array lenw :element-type 'flonum))
+	 (iwork (make-array limit :element-type 'f2cl-lib:integer4))
+	 (f (get-integrand fun var)))
+    (map-into p #'float-or-lose (cdr points))
+    (handler-case
+	(multiple-value-bind (junk z-a z-b z-npts z-points z-epsabs z-epsrel
+				   result abserr neval ier
+				   z-leniw z-lenw last)
+	    (slatec:dqagp #'(lambda (x)
+			      (float (funcall f x)))
+			  (float-or-lose a)
+			  (float-or-lose b)
+			  npts2
+			  p
+			  (float-or-lose epsabs)
+			  (float-or-lose epsrel)
+			  0.0 0.0 0 0
+			  leniw lenw 0 iwork work)
+	  (declare (ignore junk z-a z-b z-npts z-points z-epsabs z-epsrel
+			   z-leniw z-lenw last))
+	  (list '(mlist) result abserr neval ier))
+      (error ()
+	`(($quad_qagp) ,fun ,var ,a ,b ,points
+	  ((mequal) $epsrel ,epsrel)
+	  ((mequal) $epsabs ,epsabs)
+	  ((mequal) $limit ,limit))))))
+					
 ;; error checking similar to that done by $defint
 (defun quad_argument_check (exp var ll ul) 
   (setq exp (ratdisrep exp))
@@ -288,6 +322,20 @@
 	((or (among var ul)
 	     (among var ll))
 	 (merror "Limit contains variable of integration: ~M" var))))
+
+(defun quad-control (parameter &optional new-value)
+  (values
+   (slatec:j4save (case parameter
+		    ($current_error 1)
+		    ($control 2)
+		    ($max_message 4)
+		    (otherwise
+		     (merror "Parameter should be current_error, control, or max_mmessage")))
+		  (or new-value 0)
+		  (if new-value t nil))))
+
+(defun $quad_control (parameter &rest new-value)
+  (quad-control parameter (if new-value (car new-value))))
 
 (macrolet
     ((frob (mname iname args valid-keys)
@@ -306,7 +354,8 @@
   (frob $quad_qawc quad-qawc (fun var c a b) ($epsrel $limit $epsabs))
   (frob $quad_qawf quad-qawf (fun var a omega trig) ($limit $epsabs $maxp1 $limlst))
   (frob $quad_qawo quad-qawo (fun var a b omega trig) ($epsrel $limit $epsabs $maxp1))
-  (frob $quad_qaws quad-qaws (fun var a b alfa beta wfun) ($epsrel $limit $epsabs)))
+  (frob $quad_qaws quad-qaws (fun var a b alfa beta wfun) ($epsrel $limit $epsabs))
+  (frob $quad_qagp quad-qagp (fun var a b points) ($epsrel $limit $epsabs)))
   
 ;; Tests
 ;;

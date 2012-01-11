@@ -1194,10 +1194,11 @@ relational knowledge is contained in the default context GLOBAL.")
 
 (defun numer (x)
   (let (($numer t) ; currently, no effect on $float, but proposed to
+        ($ratprint nil)
         result)
-      ;; Catch a Lisp error, if a floating point overflow occurs.
-      (setq result (let ((errset nil)) (errset ($float x))))
-      (if result (car result) nil)))
+    ;; Catch a Lisp error, if a floating point overflow occurs.
+    (setq result (let ((errset nil)) (errset ($float x))))
+    (if result (car result) nil)))
 
 (defun constp (x)
   (cond ((floatp x) 'float)
@@ -1217,37 +1218,53 @@ relational knowledge is contained in the default context GLOBAL.")
 		    (if (eq ans 'numer) (setq ans 'symbol)))
 		   (t (return nil)))))))
 
+(mapcar #'(lambda (s) (putprop (first s) (second s) 'sign-function))
+	(list
+	 (list 'mtimes 'sign-mtimes)
+	 (list 'mplus 'sign-mplus)
+	 (list 'mexpt 'sign-mexpt)
+	 (list '%log 'sign-log)
+	 (list 'mabs 'sign-mabs)
+	 (list '$min #'(lambda (x) (sign-minmax (caar x) (cdr x))))
+	 (list '$max #'(lambda (x) (sign-minmax (caar x) (cdr x))))
+	 (list '%csc #'(lambda (x) (sign (inv* (cons (ncons (zl-get (caar x) 'recip)) (cdr x))))))
+	 (list '%csch #'(lambda (x) (sign (inv* (cons (ncons (zl-get (caar x) 'recip)) (cdr x))))))
+
+	 (list '%signum #'(lambda (x) (sign (cadr x))))
+	 (list '%erf #'(lambda (x) (sign (cadr x))))
+	 (list '$li #'(lambda (x) 
+			(let ((z (first (margs x))) (n (cadadr x)))
+			  (if (and (mnump n) (eq t (mgrp z 0)) (eq t (mgrp 1 z))) (sign z) (sign-any x)))))))
 (defmfun sign (x)
   (cond ((mnump x) (setq sign (rgrp x 0) minus nil odds nil evens nil))
-	((and *complexsign* (atom x) (eq x '$%i))
+	((and *complexsign* (symbolp x) (eq x '$%i))
 	 ;; In Complex Mode the sign of %i is $imaginary.
 	 (setq sign '$imaginary))
-	((atom x) (if (eq x '$%i) (imag-err x)) (sign-any x))
-	((eq (caar x) 'mtimes) (sign-mtimes x))
-	((eq (caar x) 'mplus) (sign-mplus x))
-	((eq (caar x) 'mexpt) (sign-mexpt x))
-        ((eq (caar x) '%log) (sign-log x))
-	((eq (caar x) 'mabs) (sign-mabs x))
-	((member (caar x) '($min $max) :test #'eq) (sign-minmax (caar x) (cdr x)))
-	((member (caar x) '(%csc %csch) :test #'eq)
-	 (sign (inv* (cons (ncons (zl-get (caar x) 'recip)) (cdr x)))))
+	((symbolp x) (if (eq x '$%i) (imag-err x)) (sign-any x))
+	((and (consp x) (symbolp (caar x)) (not (specrepp x)) (get (caar x) 'sign-function))
+	 (funcall (get (caar x) 'sign-function) x))
+	((and (consp x) (not (specrepp x)) ($subvarp (mop x)) (get (mop (mop x)) 'sign-function))
+	 (funcall (get (mop (mop x)) 'sign-function) x))
 	((specrepp x) (sign (specdisrep x)))
 	((kindp (caar x) '$posfun) (sign-posfun x))
-	((or (member (caar x) '(%signum %erf) :test #'eq)
-	     (and (kindp (caar x) '$oddfun) (kindp (caar x) '$increasing)))
-	 (sign-oddinc x))
+	((and (kindp (caar x) '$oddfun) (kindp (caar x) '$increasing)) (sign-oddinc x))
 	(t (sign-any x))))
 
 (defun sign-any (x)
   (cond ((and *complexsign*
-	      (or (and (atom x) (decl-complexp x))
-		  (and (not (atom x)) (decl-complexp (caar x)))))
-	 ;; In Complex Mode look for symbols declared to be complex.
-	 (when *debug-compar*
-	   (format t "~&SIGN-ANY with ~A~&   Symbol declared to be complex found.~%" x))
-	 (if (and (atom x) ($featurep x '$imaginary))
-	     (setq sign '$imaginary)
-	     (setq sign '$complex)))
+              (symbolp x)
+              (decl-complexp x))
+         ;; In Complex Mode look for symbols declared to be complex.
+         (if ($featurep x '$imaginary)
+             (setq sign '$imaginary)
+             (setq sign '$complex)))
+        ((and *complexsign*
+              (not (atom x))
+              (decl-complexp (caar x)))
+         ;; A function f(x), where f is declared to be imaginary or complex.
+         (if ($featurep (caar x) '$imaginary)
+             (setq sign '$imaginary)
+             (setq sign '$complex)))
 	(t
 	 (dcompare x 0)
 	 (if (and $assume_pos
@@ -1328,7 +1345,7 @@ relational knowledge is contained in the default context GLOBAL.")
 (defun signdiff-special (xlhs xrhs)
   ;; xlhs may be a constant
   (let ((sgn nil))
-    (when (or (and (numberp xrhs) (minusp xrhs)
+    (when (or (and (realp xrhs) (minusp xrhs)
 		   (not (atom xlhs)) (eq (sign* xlhs) '$pos))
 					; e.g. sign(a^3+%pi-1) where a>0
 	      (and (mexptp xlhs)
@@ -1585,25 +1602,19 @@ relational knowledge is contained in the default context GLOBAL.")
 ;;; Determine the sign of log(expr). This function changes the special variable sign.
 
 (defun sign-log (x)
-  (setq x (cadr x)) ;; looking at sign of log(x)
-  (cond ((eq t (meqp x 1)) (setf sign '$zero)) ;; log(1) = 0.
-	;; for x on the unit circle and x # 1, log(x) is pure imaginary
-	((and  *complexsign* (eq t (meqp 1 (take '(mabs) x))) (eq t (mnqp x 1)))
-	 (setf sign '$imaginary))
-	;; log(x) is positive for x > 1
-	((eq t (mgrp x 1)) (setf sign '$pos))
-	((eq t (mgqp x 1)) (setf sign '$pz))
-	;; log(x) is negative for 0 < x < 1.
-	((and (eq t (mgrp x 0)) (eq t (mgrp 1 x))) (setf sign '$neg))
-
-	;; log(x) is real for x > 0
-	((eq t (mgrp x 0)) (setf sign '$pnz))
-
-	;; Nothing is known.  Return $complex if allowed, 
-	;;  otherwise pnz
-	(*complexsign* (setf sign '$complex)) 
-	(t (setf sign '$pnz)))
-  sign)
+  (setq x (cadr x))
+  (setq sign
+	(cond ((eq t (mgrp x 0))
+	       (cond ((eq t (mgrp 1 x)) '$neg)
+		     ((eq t (meqp x 1)) '$zero);; log(1) = 0.
+		     ((eq t (mgqp 1 x)) '$nz)
+		     ((eq t (mgrp x 1)) '$pos)
+		     ((eq t (mgqp x 1)) '$pz)
+		     ((eq t (mnqp x 1)) '$pn)
+		     (t '$pnz)))
+	      ((and  *complexsign* (eql 1 (cabs x))) '$imaginary)
+	      (*complexsign* '$complex)
+	      (t '$pnz))))
 
 (defun sign-mabs (x)
   (sign (cadr x))
@@ -1748,7 +1759,7 @@ relational knowledge is contained in the default context GLOBAL.")
           ind))
         ;; Properties not related to the assume database.
         ((and (member ind opers) (get e ind)))
-        ((and (member ind '($evfun $evflag $bindtest $special $nonarray))
+        ((and (member ind '($evfun $evflag $bindtest $nonarray))
               (get e (stripdollar ind))))
         ((and (eq ind '$noun)
               (get e (stripdollar ind))

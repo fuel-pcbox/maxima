@@ -1,17 +1,21 @@
-
-@c end concepts Number Theory
 @menu
 * Functions and Variables for Number Theory::  
 @end menu
 
+@c -----------------------------------------------------------------------------
 @node Functions and Variables for Number Theory,  , Number Theory, Number Theory
 @section Functions and Variables for Number Theory
+@c -----------------------------------------------------------------------------
 
+@c -----------------------------------------------------------------------------
+@anchor{bern}
 @deffn {Function} bern (@var{n})
+
 Returns the @var{n}'th Bernoulli number for integer @var{n}.
 @c WELL, ACTUALLY bern SIMPLIFIES, LIKE FACTORIAL -- DO WE WANT TO GET INTO THAT ???
 @c OR JUST PRETEND IT'S "RETURNED" ???
-Bernoulli numbers equal to zero are suppressed if @code{zerobern} is @code{false}.
+Bernoulli numbers equal to zero are suppressed if @code{zerobern} is
+@code{false}.
 
 See also @code{burn}.
 
@@ -33,7 +37,10 @@ See also @code{burn}.
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{bernpoly}
 @deffn {Function} bernpoly (@var{x}, @var{n})
+
 Returns the @var{n}'th Bernoulli polynomial in the
 variable @var{x}.
 
@@ -42,7 +49,10 @@ variable @var{x}.
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{bfzeta}
 @deffn {Function} bfzeta (@var{s}, @var{n})
+
 Returns the Riemann zeta function for the argument @var{s}.
 The return value is a big float (bfloat);
 @var{n} is the number of digits in the return value.
@@ -52,7 +62,10 @@ The return value is a big float (bfloat);
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{bfhzeta}
 @deffn {Function} bfhzeta (@var{s}, @var{h}, @var{n})
+
 Returns the Hurwitz zeta function for the arguments @var{s} and @var{h}.
 The return value is a big float (bfloat);
 @var{n} is the number of digits in the return value.
@@ -81,51 +94,14 @@ $$\zeta \left(s,h\right) = \sum_{k=0}^\infty {1 \over \left(k+h\right)^{s}}$$
 @closecatbox
 @end deffn
 
-@deffn {Function} binomial (@var{x}, @var{y})
-The binomial coefficient @code{@var{x}!/(@var{y}! (@var{x} - @var{y})!)}.
-If @var{x} and @var{y} are integers, then the numerical value of the binomial
-coefficient is computed.
-If @var{y}, or @var{x - y}, is an integer,
-the binomial coefficient is expressed as a polynomial.
-
-Examples:
-
-@c ===beg===
-@c binomial (11, 7);
-@c 11! / 7! / (11 - 7)!;
-@c binomial (x, 7);
-@c binomial (x + 7, x);
-@c binomial (11, y);
-@c ===end===
-@example
-(%i1) binomial (11, 7);
-(%o1)                          330
-(%i2) 11! / 7! / (11 - 7)!;
-(%o2)                          330
-(%i3) binomial (x, 7);
-        (x - 6) (x - 5) (x - 4) (x - 3) (x - 2) (x - 1) x
-(%o3)   -------------------------------------------------
-                              5040
-(%i4) binomial (x + 7, x);
-      (x + 1) (x + 2) (x + 3) (x + 4) (x + 5) (x + 6) (x + 7)
-(%o4) -------------------------------------------------------
-                               5040
-(%i5) binomial (11, y);
-(%o5)                    binomial(11, y)
-@end example
-
-@opencatbox
-@category{Number theory}
-@closecatbox
-@end deffn
-
 @c -----------------------------------------------------------------------------
+@anchor{burn}
 @deffn {Function} burn (@var{n})
 
 Returns a rational number, which is an approximation of the @var{n}'th Bernoulli
-number for integer @var{n}. @code{burn} exploits the observation that (rational)
-Bernoulli numbers can be approximated by (transcendental) zetas with tolerable 
-efficiency:
+number for integer @var{n}.  @code{burn} exploits the observation that
+(rational) Bernoulli numbers can be approximated by (transcendental) zetas with
+tolerable efficiency:
 
 @example
                    n - 1  1 - 2 n
@@ -137,40 +113,40 @@ efficiency:
 
 @code{burn} may be more efficient than @code{bern} for large, isolated @var{n}
 as @code{bern} computes all the Bernoulli numbers up to index @var{n} before 
-returning. @code{burn} invokes the approximation for even integers @var{n} > 
-255. For odd integers and @var{n} <= 255 the function @code{bern} is called.
+returning.  @code{burn} invokes the approximation for even integers @var{n} >
+255.  For odd integers and @var{n} <= 255 the function @code{bern} is called.
 
-@code{load ("bffac")} loads this function. See also @code{bern}.
+@code{load ("bffac")} loads this function.  See also @code{bern}.
 
 @opencatbox
 @category{Number theory}
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{cf}
 @deffn {Function} cf (@var{expr})
-Converts @var{expr} into a continued fraction.
-@var{expr} is an expression
-comprising continued fractions and square roots of integers.
-Operands in the expression may be combined with arithmetic operators.
-Aside from continued fractions and square roots,
-factors in the expression must be integer or rational numbers.
-Maxima does not know about operations on continued fractions outside of @code{cf}.
 
-@code{cf} evaluates its arguments after binding @code{listarith} to @code{false}.
-@code{cf} returns a continued fraction, represented as a list.
+Converts @var{expr} into a continued fraction.  @var{expr} is an expression
+comprising continued fractions and square roots of integers.  Operands in the
+expression may be combined with arithmetic operators.  Aside from continued
+fractions and square roots, factors in the expression must be integer or
+rational numbers.  Maxima does not know about operations on continued fractions
+outside of @code{cf}.
 
-A continued fraction @code{a + 1/(b + 1/(c + ...))}
-is represented by the list @code{[a, b, c, ...]}.
-The list elements @code{a}, @code{b}, @code{c}, ... must evaluate to integers.
-@var{expr} may also contain @code{sqrt (n)} where @code{n} is an integer.
-In this case @code{cf} will give as many
-terms of the continued fraction as the value of the variable
-@code{cflength} times the period.
+@code{cf} evaluates its arguments after binding @code{listarith} to
+@code{false}.  @code{cf} returns a continued fraction, represented as a list.
 
-A continued fraction can be evaluated to a number
-by evaluating the arithmetic representation
-returned by @code{cfdisrep}.
-See also @code{cfexpand} for another way to evaluate a continued fraction.
+A continued fraction @code{a + 1/(b + 1/(c + ...))} is represented by the list
+@code{[a, b, c, ...]}.  The list elements @code{a}, @code{b}, @code{c}, @dots{}
+must evaluate to integers.  @var{expr} may also contain @code{sqrt (n)} where
+@code{n} is an integer.  In this case @code{cf} will give as many terms of the
+continued fraction as the value of the variable @code{cflength} times the
+period.
+
+A continued fraction can be evaluated to a number by evaluating the arithmetic
+representation returned by @code{cfdisrep}.  See also @code{cfexpand} for
+another way to evaluate a continued fraction.
 
 See also @code{cfdisrep}, @code{cfexpand}, and @code{cflength}.
 
@@ -178,7 +154,8 @@ Examples:
 
 @itemize @bullet
 @item
-@var{expr} is an expression comprising continued fractions and square roots of integers.
+@var{expr} is an expression comprising continued fractions and square roots of
+integers.
 
 @example
 (%i1) cf ([5, 3, 1]*[11, 9, 7] + [3, 7]/[4, 3, 2]);
@@ -204,8 +181,8 @@ are computed for algebraic, irrational numbers.
 @end example
 
 @item
-A continued fraction can be evaluated by evaluating the arithmetic representation
-returned by @code{cfdisrep}.
+A continued fraction can be evaluated by evaluating the arithmetic
+representation returned by @code{cfdisrep}.
 
 @example
 (%i1) cflength: 3$
@@ -215,7 +192,8 @@ returned by @code{cfdisrep}.
 @end example
 
 @item
-Maxima does not know about operations on continued fractions outside of @code{cf}.
+Maxima does not know about operations on continued fractions outside of
+@code{cf}.
 
 @example
 (%i1) cf ([1,1,1,1,1,2] * 3);
@@ -233,7 +211,11 @@ Maxima does not know about operations on continued fractions outside of @code{cf
 
 @c NEEDS CLARIFICATION -- MAKE EXPLICIT HOW list IS RELATED TO a, b, c, ...
 @c ALSO, CAN list CONTAIN ANYTHING OTHER THAN LITERAL INTEGERS ??
+
+@c -----------------------------------------------------------------------------
+@anchor{cfdisrep}
 @deffn {Function} cfdisrep (@var{list})
+
 Constructs and returns an ordinary arithmetic expression
 of the form @code{a + 1/(b + 1/(c + ...))}
 from the list representation of a continued fraction @code{[a, b, c, ...]}.
@@ -256,9 +238,12 @@ from the list representation of a continued fraction @code{[a, b, c, ...]}.
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{cfexpand}
 @deffn {Function} cfexpand (@var{x})
-Returns a matrix of the numerators and denominators of the
-last (column 1) and next-to-last (column 2) convergents of the continued fraction @var{x}.
+
+Returns a matrix of the numerators and denominators of the last (column 1) and
+next-to-last (column 2) convergents of the continued fraction @var{x}.
 
 @example
 (%i1) cf (rat (ev (%pi, numer)));
@@ -278,12 +263,14 @@ last (column 1) and next-to-last (column 2) convergents of the continued fractio
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{cflength}
 @defvr {Option variable} cflength
 Default value: 1
 
-@code{cflength} controls the number of terms of the continued
-fraction the function @code{cf} will give, as the value @code{cflength} times the
-period.  Thus the default is to give one period.
+@code{cflength} controls the number of terms of the continued fraction the
+function @code{cf} will give, as the value @code{cflength} times the period.
+Thus the default is to give one period.
 
 @example
 (%i1) cflength: 1$
@@ -300,10 +287,11 @@ period.  Thus the default is to give one period.
 @opencatbox
 @category{Continued fractions}
 @closecatbox
-
 @end defvr
 
-@deffn {Function} divsum (@var{n}, @var{k})
+@c -----------------------------------------------------------------------------
+@anchor{divsum}
+@deffn  {Function} divsum (@var{n}, @var{k})
 @deffnx {Function} divsum (@var{n})
 
 @code{divsum (@var{n}, @var{k})} returns the sum of the divisors of @var{n}
@@ -327,7 +315,10 @@ raised to the @var{k}'th power.
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{euler}
 @deffn {Function} euler (@var{n})
+
 Returns the @var{n}'th Euler number for nonnegative integer @var{n}.
 
 For the Euler-Mascheroni constant, see @code{%gamma}.
@@ -342,42 +333,10 @@ For the Euler-Mascheroni constant, see @code{%gamma}.
 @closecatbox
 @end deffn
 
-@defvr {Constant} %gamma
-@ifinfo
-@vrindex Euler-Mascheroni constant
-@end ifinfo
-The Euler-Mascheroni constant, 0.5772156649015329 ....
-@c DOUBTLESS THERE IS MORE TO SAY HERE.
-
-@opencatbox
-@category{Constants}
-@closecatbox
-
-@end defvr
-
-@deffn {Function} factorial (@var{x})
-Represents the factorial function. Maxima treats @code{factorial (@var{x})} the same as @code{@var{x}!}.
-See @code{!}.
-
-@opencatbox
-@category{Gamma and factorial functions}
-@closecatbox
-@end deffn
-
 @c -----------------------------------------------------------------------------
-@defvr {Option variable} factorial_expand
-Default value: false
-
-The option variable @code{factorial_expand} controls the simplification of 
-expressions like @code{(n+1)!}, where @code{n} is an integer. 
-See @code{!} for an example.
-
-@opencatbox
-@category{Gamma and factorial functions}
-@closecatbox
-@end defvr
-
+@anchor{fib}
 @deffn {Function} fib (@var{n})
+
 Returns the @var{n}'th Fibonacci number.
 @code{fib(0)} equal to 0 and @code{fib(1)} equal to 1,
 and
@@ -397,7 +356,10 @@ the Fibonacci number preceding the last one computed.
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{fibtophi}
 @deffn {Function} fibtophi (@var{expr})
+
 Expresses Fibonacci numbers in @var{expr} in terms of the constant @code{%phi},
 which is @code{(1 + sqrt(5))/2}, approximately 1.61803399.
 
@@ -435,8 +397,11 @@ Examples:
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{ifactors}
 @deffn {Function} ifactors (@var{n})
-For a positive integer @var{n} returns the factorization of @var{n}. If
+
+For a positive integer @var{n} returns the factorization of @var{n}.  If
 @code{n=p1^e1..pk^nk} is the decomposition of @var{n} into prime
 factors, ifactors returns @code{[[p1, e1], ... , [pk, ek]]}.
 
@@ -455,7 +420,41 @@ Pollard's rho method and elliptic curve method.
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{igcdex}
+@deffn {Function} igcdex (@var{n}, @var{k})
+
+Returns a list @code{[@var{a}, @var{b}, @var{u}]} where @var{u} is the greatest
+common divisor of @var{n} and @var{k}, and @var{u} is equal to
+@code{@var{a} @var{n} + @var{b} @var{k}}.  The arguments @var{n} and @var{k}
+must be integers.
+
+@code{igcdex} implements the Euclidean algorithm.  See also @mrefdot{gcdex}
+
+The command @code{load(gcdex)} loads the function.
+
+Examples:
+
+@example
+(%i1) load(gcdex)$
+
+(%i2) igcdex(30,18);
+(%o2)                      [- 1, 2, 6]
+(%i3) igcdex(1526757668, 7835626735736);
+(%o3)            [845922341123, - 164826435, 4]
+(%i4) igcdex(fib(20), fib(21));
+(%o4)                   [4181, - 2584, 1]
+@end example
+
+@opencatbox
+@category{Number theory}
+@closecatbox
+@end deffn
+
+@c -----------------------------------------------------------------------------
+@anchor{inrt}
 @deffn {Function} inrt (@var{x}, @var{n})
+
 Returns the integer @var{n}'th root of the absolute value of @var{x}.
 
 @example
@@ -469,8 +468,11 @@ Returns the integer @var{n}'th root of the absolute value of @var{x}.
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{inv_mod}
 @deffn {Function} inv_mod (@var{n}, @var{m})
-Computes the inverse of @var{n} modulo @var{m}. 
+
+Computes the inverse of @var{n} modulo @var{m}.
 @code{inv_mod (n,m)} returns @code{false}, 
 if @var{n} is a zero divisor modulo @var{m}.
 
@@ -488,7 +490,22 @@ if @var{n} is a zero divisor modulo @var{m}.
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{isqrt}
+@deffn {Function} isqrt (@var{x})
+
+Returns the "integer square root" of the absolute value of @var{x}, which is an
+integer.
+
+@opencatbox
+@category{Mathematical functions}
+@closecatbox
+@end deffn
+
+@c -----------------------------------------------------------------------------
+@anchor{jacobi}
 @deffn {Function} jacobi (@var{p}, @var{q})
+
 Returns the Jacobi symbol of @var{p} and @var{q}.
 
 @example
@@ -502,7 +519,10 @@ Returns the Jacobi symbol of @var{p} and @var{q}.
 @closecatbox
 @end deffn
 
-@deffn {Function} lcm (@var{expr_1}, ..., @var{expr_n})
+@c -----------------------------------------------------------------------------
+@anchor{lcm}
+@deffn {Function} lcm (@var{expr_1}, @dots{}, @var{expr_n})
+
 Returns the least common multiple of its arguments.
 The arguments may be general expressions as well as integers.
 
@@ -513,34 +533,54 @@ The arguments may be general expressions as well as integers.
 @closecatbox
 @end deffn
 
-@deffn {Function} minfactorial (@var{expr})
-Examines @var{expr} for occurrences of two factorials
-which differ by an integer.
-@code{minfactorial} then turns one into a polynomial times the other.
+@c -----------------------------------------------------------------------------
+@anchor{mod}
+@deffn {Function} mod (@var{x}, @var{y})
 
-@c I CAN'T TELL WHAT THIS IS SUPPOSED TO MEAN. !!!
-@c minfactorial DOESN'T SEEM TO DO ANYTHING binomial DOESN'T DO BY ITSELF !!!
-@c LOOKING AT THE minfactorial CODE DOESN'T HELP !!!
-@c If exp involves binomial coefficients then they will be
-@c converted into ratios of factorials.
+If @var{x} and @var{y} are real numbers and @var{y} is nonzero, return
+@code{@var{x} - @var{y} * floor(@var{x} / @var{y})}.  Further for all real
+@var{x}, we have @code{mod (@var{x}, 0) = @var{x}}.  For a discussion of the
+definition @code{mod (@var{x}, 0) = @var{x}}, see Section 3.4, of
+"Concrete Mathematics," by Graham, Knuth, and Patashnik.  The function
+@code{mod (@var{x}, 1)} is a sawtooth function with period 1 with
+@code{mod (1, 1) = 0} and @code{mod (0, 1) = 0}.
 
+To find the principal argument (a number in the interval @code{(-%pi, %pi]}) of
+a complex number, use the function
+@code{@var{x} |-> %pi - mod (%pi - @var{x}, 2*%pi)}, where @var{x} is an
+argument.
+
+When @var{x} and @var{y} are constant expressions (@code{10 * %pi}, for 
+example), @code{mod} uses the same big float evaluation scheme that @code{floor}
+and @code{ceiling} uses.  Again, it's possible, although unlikely, that
+@code{mod} could return an erroneous value in such cases.
+
+For nonnumerical arguments @var{x} or @var{y}, @code{mod} knows several
+simplification rules:
+
+@c ===beg===
+@c mod (x, 0);
+@c mod (a*x, a*y);
+@c mod (0, x);
+@c ===end===
 @example
-(%i1) n!/(n+2)!;
-                               n!
-(%o1)                       --------
-                            (n + 2)!
-(%i2) minfactorial (%);
-                                1
-(%o2)                    ---------------
-                         (n + 1) (n + 2)
+(%i1) mod (x, 0);
+(%o1)                           x
+(%i2) mod (a*x, a*y);
+(%o2)                      a mod(x, y)
+(%i3) mod (0, x);
+(%o3)                           0
 @end example
 
 @opencatbox
-@category{Number theory}
+@category{Mathematical functions}
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{next_prime}
 @deffn {Function} next_prime (@var{n})
+
 Returns the smallest prime bigger than @var{n}.
 
 @example
@@ -553,7 +593,10 @@ Returns the smallest prime bigger than @var{n}.
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{partfrac}
 @deffn {Function} partfrac (@var{expr}, @var{var})
+
 Expands the expression @var{expr} in partial fractions
 with respect to the main variable @var{var}.  @code{partfrac} does a complete
 partial fraction decomposition.  The algorithm employed is based on
@@ -581,9 +624,12 @@ the expansion falls out.
 @end example
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{power_mod}
 @deffn {Function} power_mod (@var{a}, @var{n}, @var{m})
+
 Uses a modular algorithm to compute @code{a^n mod m} 
-where @var{a} and @var{n} are integers and @var{m} is a positive integer. 
+where @var{a} and @var{n} are integers and @var{m} is a positive integer.
 If @var{n} is negative, @code{inv_mod} is used to find the modular inverse.
 
 @example
@@ -602,19 +648,22 @@ If @var{n} is negative, @code{inv_mod} is used to find the modular inverse.
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{primep}
 @deffn {Function} primep (@var{n})
-Primality test. If @code{primep (@var{n})} returns @code{false}, @var{n} is a
+
+Primality test.  If @code{primep (@var{n})} returns @code{false}, @var{n} is a
 composite number and if it returns @code{true}, @var{n} is a prime number
 with very high probability.
 
 For @var{n} less than 341550071728321 a deterministic version of
-Miller-Rabin's test is used. If @code{primep (@var{n})} returns
+Miller-Rabin's test is used.  If @code{primep (@var{n})} returns
 @code{true}, then @var{n} is a prime number.
 
 For @var{n} bigger than 341550071728321 @code{primep} uses
 @code{primep_number_of_tests} Miller-Rabin's pseudo-primality tests and
-one Lucas pseudo-primality test. The probability that @var{n} will pass
-one Miller-Rabin test is less than 1/4. Using the default value 25 for
+one Lucas pseudo-primality test.  The probability that @var{n} will pass
+one Miller-Rabin test is less than 1/4.  Using the default value 25 for
 @code{primep_number_of_tests}, the probability of @var{n} beeing
 composite is much smaller that 10^-15.
 
@@ -623,6 +672,8 @@ composite is much smaller that 10^-15.
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{primep_number_of_tests}
 @defvr {Option variable} primep_number_of_tests
 Default value: 25
 
@@ -631,10 +682,12 @@ Number of Miller-Rabin's tests used in @code{primep}.
 @opencatbox
 @category{Predicate functions} @category{Number theory}
 @closecatbox
-
 @end defvr
 
+@c -----------------------------------------------------------------------------
+@anchor{prev_time}
 @deffn {Function} prev_prime (@var{n})
+
 Returns the greatest prime smaller than @var{n}.
 
 @example
@@ -647,7 +700,10 @@ Returns the greatest prime smaller than @var{n}.
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{qunit}
 @deffn {Function} qunit (@var{n})
+
 Returns the principal unit of the real quadratic number field
 @code{sqrt (@var{n})} where @var{n} is an integer,
 i.e., the element whose norm is unity.
@@ -665,7 +721,10 @@ This amounts to solving Pell's equation @code{a^2 - @var{n} b^2 = 1}.
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{totient}
 @deffn {Function} totient (@var{n})
+
 Returns the number of integers less than or equal to @var{n} which
 are relatively prime to @var{n}.
 
@@ -679,7 +738,7 @@ are relatively prime to @var{n}.
 Default value: @code{true}
 
 When @code{zerobern} is @code{false}, @code{bern} excludes the Bernoulli numbers
-and @code{euler} excludes the Euler numbers which are equal to zero. 
+and @code{euler} excludes the Euler numbers which are equal to zero.
 See @code{bern} and @code{euler}.
 
 @opencatbox
@@ -688,14 +747,16 @@ See @code{bern} and @code{euler}.
 @end defvr
 
 @c -----------------------------------------------------------------------------
+@anchor{zeta}
 @deffn {Function} zeta (@var{n})
-Returns the Riemann zeta function. If @var{n} is a negative integer, 0, or a 
+
+Returns the Riemann zeta function.  If @var{n} is a negative integer, 0, or a
 positive even integer, the Riemann zeta function simplifies to an exact value.
 For a positive even integer the option variable @code{zeta%pi} has to be
-@code{true} in addition (See @code{zeta%pi}). For a floating point or bigfloat 
-number the Riemann zeta function is evaluated numerically. Maxima returns a noun
-form @code{zeta (@var{n})} for all other arguments, including rational 
-noninteger, and complex arguments, or for even integers, if @code{zeta%pi} has 
+@code{true} in addition (See @code{zeta%pi}).  For a floating point or bigfloat
+number the Riemann zeta function is evaluated numerically.  Maxima returns a
+noun form @code{zeta (@var{n})} for all other arguments, including rational
+noninteger, and complex arguments, or for even integers, if @code{zeta%pi} has
 the value @code{false}.
 
 @code{zeta(1)} is undefined, but Maxima knows the limit 
@@ -731,11 +792,12 @@ Examples:
 @end deffn
 
 @c -----------------------------------------------------------------------------
+@anchor{zeta%pi}
 @defvr {Option variable} zeta%pi
 Default value: @code{true}
 
 When @code{zeta%pi} is @code{true}, @code{zeta} returns an expression 
-proportional to @code{%pi^n} for even integer @code{n}. Otherwise, @code{zeta} 
+proportional to @code{%pi^n} for even integer @code{n}.  Otherwise, @code{zeta} 
 returns a noun form @code{zeta (n)} for even integer @code{n}.
 
 Examples:

@@ -849,43 +849,56 @@
 	(t (if lst `(($num_distinct_partitions simp) ,n ,lst) 
 	     `(($num_distinct_partitions simp) ,n)))))
 
-;; A Kronecker delta function.  kron_delta(p,q) evaluates to 1 if
-;; (like p q); when csign(|p-q|) is pos, return 0; when csign(|p-q|) 
-;; is zero and p and q aren't floats or bigfloats, return 1. 
-;; 0; otherwise, return the noun form. 
+;; A n-ary Kronecker delta function: kron_delta(n0,n1, ..., nk) simplifies to 1 if
+;; (meqp ni nj) is true for *all* pairs ni, nj in (n0,n1, ..., nk); it simplifies to 0 if
+;; (mnqp ni nj) is true for *some* pair ni, nj in (n0,n1, ..., nk). Further kron_delta() --> 1
+;; and kron_delta(xxx) --> wrong number of arguments error. Thus
+;;
+;;    kron_delta(x0,...,xn) * kron_delta(y0,..., ym) = kron_delta(x0, ..., xn, y0, ..., ym)
+;;
+;; is an identity.
 
-(defprop $kron_delta simp-kron-delta operators)
+(defprop %kron_delta simp-kron-delta operators)
+(setf (get '$kron_delta 'noun) '%kron_delta)
+(setf (get '%kron_delta 'verb) '$kron_delta)
+(setf (get '$kron_delta 'alias) '%kron_delta)
+(setf (get '%kron_delta 'reversealias) '$kron_delta)
+(defun $kron_delta (x) (take '($kron_delta) x))
+(setf (get '%kron_delta 'real-valued) t) ;; conjugate(kron_delta(xxx)) --> kron_delta(xxx)
+(setf (get '%kron_delta 'integer-valued) t) ;; featurep(kron_delta(xxx), integer) --> true
 
-(eval-when
-    #+gcl (load eval)
-    #-gcl (:load-toplevel :execute)
-    ;; (kind '$kron_delta '$symmetric)) <-- This doesn't work. Why?
-    ;; Put new fact in global context; 
-    ;; otherwise it goes in initial context, which is meant for the user.
-    (let (($context '$global) (context '$global))
-      (meval* '(($declare) $kron_delta $symmetric))))
-		 	
-(defun simp-kron-delta (x y z)
-  (twoargcheck x)
-  (setq y (mapcar #'(lambda (s) (simplifya s z)) (margs x)))
-  (let ((p (nth 0 y))
-	(q (nth 1 y)))
-    (let ((sgn (meqp p q)))
-      (cond ((eq sgn t) 1)
-	    ((eq sgn nil) 0)
-	    (t `(($kron_delta simp) ,p ,q))))))
+(putprop '%kron_delta #'(lambda (s) (setq sign '$pz)) 'sign-function)
+
+(defun simp-kron-delta (l y z)
+  (declare (ignore y))
+
+  (setq l (cdr l)) ;; remove (($kron_delta simp)
+  (if (and l (null (cdr l))) (wna-err '$knon_delta)) ;; wrong number of arguments error for exactly one argument
+
+  ;; Checking both mnqp and meqp is convenient, but unnecessary. This code misses simplifications that
+  ;; involve three or more arguments. Example: kron_delta(a,b,a+b+1,a-b+5) could (but doesn't) simplify 
+  ;; to 0 (the solution set (a = b, a = a+b+1, a=a-b+5) is empty.
+
+  (let ((acc nil) (return-zero nil))
+    (setq return-zero (catch 'done
+			(dolist (lk l) 
+			  (setq lk (simpcheck lk z))
+			  (cond ((some #'(lambda (s) (eq t (mnqp s lk))) acc) ;; lk # some member of acc, return zero.
+				 (throw 'done t))
+				((some #'(lambda (s) (eq t (meqp s lk))) acc)) ;; lk = some member of acc, do nothing
+				(t (push lk acc))));; push lk onto acc
+			nil)) ;; set return-zero to nil
+    (cond (return-zero 0)
+	  ((or (null acc) (null (cdr acc))) 1)
+	  (t  ;; reflection: kron_delta(-a,-b,...) == kron_delta(a,b,...).
+	   (let ((neg-acc (sort (mapcar #'neg acc) '$orderlessp)))
+	     (setq acc (sort acc '$orderlessp))
+	     `((%kron_delta simp) ,@(if (great (cons '(mlist) neg-acc) (cons '(mlist) acc)) neg-acc acc)))))))
 			
-(defprop $kron_delta tex-kron-delta tex)
+(defprop %kron_delta tex-kron-delta tex)
 
 (defun tex-kron-delta (x l r)
-  (setq x (mapcar #'(lambda (s) (tex s nil nil nil nil)) (cdr x)))
-  (append l 
-	  `("\\delta_{")
-	  (nth 0 x)
-	  `(",")
-	  (nth 1 x)
-	  `("}")
-	  r))
+  (append l `("\\delta_{" ,@(tex-list (cdr x) nil (list "} ") ", ")) r))
 
 ;; Stirling numbers of the first kind.
 
@@ -1100,6 +1113,7 @@
 (def-nary '$max (s) (if (null s) '$minf (maximin s '$max)) '$minf)
 (def-nary '$min (s) (if (null s) '$inf (maximin s '$min)) '$inf)
 (def-nary '$append (s) (xappend s) '((mlist)))
+(def-nary '$union (s) ($apply '$union (cons '(mlist) s)) '(($set)))
 
 ;; Extend a function f : S x S -> S to n arguments. When we 
 ;; recognize f as a nary function (associative), if possible we call a Maxima
@@ -1281,14 +1295,19 @@
    ;; NOT CLEAR FROM PRECEDING CODE WHAT IS "INVALID" HERE
    (merror (intl:gettext "some: invalid arguments.")))))
 
-(defun $makeset (f v s)
-  (if (or (not ($listp v)) 
-	  (not (every #'(lambda (x) (or ($atom x) ($subvarp x))) (cdr v))))
-      (merror (intl:gettext "makeset: second argument must be a list of atoms or subscripted variables; found: ~:M") v))
-  (setq s (require-list-or-set s "$makeset"))
-
-  (setq f `((lambda) ,v ,f))
-  `(($set) ,@(mapcar #'(lambda (x) (mfuncall '$apply f x)) s)))
+(defmspec $makeset (l)
+  (let* ((fn (car (pop l)))
+	 (f (if l (pop l) (wna-err fn)))
+	 (v (if l (pop l) (wna-err fn)))
+	 (s (if l (pop l) (wna-err fn))))
+    (if l (wna-err fn))
+    (if (or (not ($listp v)) (not (every #'(lambda (x) (or ($symbolp x) ($subvarp x))) (cdr v))))
+   	(merror (intl:gettext "makeset: second argument must be a list of symbols; found: ~:M") v))
+    (setq s (require-list-or-set (meval s) "$makeset"))
+    (setq f (list (list 'lambda) v f))
+    (setq v (margs v))
+    (dolist (sk v) (setq f (subst (gensym) sk f :test #'alike1)))
+    (simplifya (cons '($set) (mapcar #'(lambda (x) (mfuncall '$apply f x)) s)) t)))
 
 ;; Thread fn over l and apply op to the resulting list.
 

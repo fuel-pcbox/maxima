@@ -149,7 +149,6 @@
    "tr_warn_mode"
    "tr_warn_undeclared"
    "tr_warn_undefined_variable"
-   "tr_windy"
    "use_fast_arrays"))
    
    
@@ -370,7 +369,6 @@
    "sumsplitfact"
    "taylordepth"
    "tlimswitch"
-   "transbind"
    "transcompile"
    "transrun"
    "trigexpandplus"

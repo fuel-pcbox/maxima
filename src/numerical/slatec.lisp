@@ -30,6 +30,7 @@
    #:dspenc
 
    ;; Quadpack routines
-   #:dqag #:dqags #:dqagi #:dqawc #:dqawf #:dqawo #:dqaws
+   #:dqag #:dqags #:dqagi #:dqawc #:dqawf #:dqawo #:dqaws #:dqagp
+   #:j4save
    )
   (:documentation "Package for the Fortran routines we need from SLATEC"))

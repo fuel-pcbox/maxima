@@ -12,8 +12,6 @@
 
 (macsyma-module trans5)
 
-(transl-module trans5)
-
 ;;; these are TRANSLATE properies for the FSUBRS in JPG;COMM >
 
 ;;; LDISPLAY is one of the most beastly of all macsyma idiot
@@ -186,7 +184,7 @@
 		    ((eq (caar var) 'msetq)
 		     `(cons ',(cadr var) ,(dtranslate (caddr var))))
 		    (t (setq tr-abort t)
-		       (tr-tell var "Illegal `buildq' form encountered during translation"))))
+		       (tr-format (intl:gettext "error: found unhandled variable ~:M in 'buildq'.~%") var))))
 					;right thing to do here??
 					;how much error checking does transl do now?
 					; Yes. Not as much as it should! -GJC

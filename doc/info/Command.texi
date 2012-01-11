@@ -1,900 +1,473 @@
 @menu
 * Introduction to Command Line::
 * Functions and Variables for Command Line::
+* Functions and Variables for Display::
 @end menu
 
+@c -----------------------------------------------------------------------------
 @node Introduction to Command Line, Functions and Variables for Command Line, Command Line, Command Line
 @section Introduction to Command Line
-
-@c NEEDS EXAMPLES
-@c THIS ITEM IS VERY IMPORTANT !!
-@deffn {Operator} '
-@ifinfo
-@fnindex Quote operator
-@end ifinfo
-The single quote operator @code{'} prevents evaluation.
-
-Applied to a symbol,
-the single quote prevents evaluation of the symbol.
-
-Applied to a function call,
-the single quote prevents evaluation of the function call,
-although the arguments of the function are still evaluated (if evaluation is not otherwise prevented).
-The result is the noun form of the function call.
-
-Applied to a parenthesized expression,
-the single quote prevents evaluation of all symbols and function calls in the expression.
-@c DUNNO IF THESE EXAMPLES ARE STILL NEEDED -- COVERED BY ITEMS UNDER "Examples"
-E.g., @code{'(f(x))} means do not evaluate the expression @code{f(x)}.
-@code{'f(x)} (with the single quote applied to @code{f} instead of @code{f(x)})
-means return the noun form of @code{f} applied to @code{[x]}.
-
-The single quote does not prevent simplification.
-
-When the global flag @code{noundisp} is @code{true},
-nouns display with a single quote.
-This switch is always @code{true} when displaying function definitions.
-
-See also the quote-quote operator @code{''} and @code{nouns}.
-
-Examples:
-
-Applied to a symbol,
-the single quote prevents evaluation of the symbol.
-
-@c ===beg===
-@c aa: 1024;
-@c aa^2;
-@c 'aa^2;
-@c ''%;
-@c ===end===
-@example
-(%i1) aa: 1024;
-(%o1)                         1024
-(%i2) aa^2;
-(%o2)                        1048576
-(%i3) 'aa^2;
-                                 2
-(%o3)                          aa
-(%i4) ''%;
-(%o4)                        1048576
-@end example
-
-Applied to a function call,
-the single quote prevents evaluation of the function call.
-The result is the noun form of the function call.
-
-@c ===beg===
-@c x0: 5;
-@c x1: 7;
-@c integrate (x^2, x, x0, x1);
-@c 'integrate (x^2, x, x0, x1);
-@c %, nouns;
-@c ===end===
-@example
-(%i1) x0: 5;
-(%o1)                           5
-(%i2) x1: 7;
-(%o2)                           7
-(%i3) integrate (x^2, x, x0, x1);
-                               218
-(%o3)                          ---
-                                3
-(%i4) 'integrate (x^2, x, x0, x1);
-@group
-                             7
-                            /
-                            [   2
-(%o4)                       I  x  dx
-                            ]
-                            /
-                             5
-@end group
-(%i5) %, nouns;
-                               218
-(%o5)                          ---
-                                3
-@end example
-
-Applied to a parenthesized expression,
-the single quote prevents evaluation of all symbols and function calls in the 
-expression.
-
-@c ===beg===
-@c aa: 1024;
-@c bb: 19;
-@c sqrt(aa) + bb;
-@c '(sqrt(aa) + bb);
-@c ''%;
-@c ===end===
-@example
-(%i1) aa: 1024;
-(%o1)                         1024
-(%i2) bb: 19;
-(%o2)                          19
-(%i3) sqrt(aa) + bb;
-(%o3)                          51
-(%i4) '(sqrt(aa) + bb);
-(%o4)                     bb + sqrt(aa)
-(%i5) ''%;
-(%o5)                          51
-@end example
-
-The single quote does not prevent simplification.
-
-@c ===beg===
-@c sin (17 * %pi) + cos (17 * %pi);
-@c '(sin (17 * %pi) + cos (17 * %pi));
-@c ===end===
-@example
-(%i1) sin (17 * %pi) + cos (17 * %pi);
-(%o1)                          - 1
-(%i2) '(sin (17 * %pi) + cos (17 * %pi));
-(%o2)                          - 1
-@end example
-
-Maxima considers floating point operations by its in-built mathematical 
-functions to be a simplification.
-
-@c ===beg===
-@c sin(1.0);
-@c '(sin(1.0));
-@c ===end===
-@example
-(%i1) sin(1.0);
-(%o1)                          .8414709848078965
-(%i2) '(sin(1.0));
-(%o2)                          .8414709848078965
-@end example
-
-@opencatbox
-@category{Evaluation} @category{Operators}
-@closecatbox
-
-@end deffn
-
-@deffn {Operator} ''
-@ifinfo
-@fnindex Quote-quote operator
-@end ifinfo
-The quote-quote operator @code{'@w{}'} (two single quote marks) modifies evaluation in input expressions.
-
-Applied to a general expression @var{expr}, quote-quote causes the value of @var{expr}
-to be substituted for @var{expr} in the input expression.
-
-Applied to the operator of an expression,
-quote-quote changes the operator from a noun to a verb (if it is not already a verb).
-
-The quote-quote operator is applied by the input parser;
-it is not stored as part of a parsed input expression.
-The quote-quote operator is always applied as soon as it is parsed,
-and cannot be quoted.
-Thus quote-quote causes evaluation when evaluation is otherwise suppressed,
-such as in function definitions, lambda expressions, and expressions quoted by single quote @code{'}.
-
-Quote-quote is recognized by @code{batch} and @code{load}.
-
-See also the single-quote operator @code{'} and @code{nouns}.
-
-Examples:
-
-Applied to a general expression @var{expr}, quote-quote causes the value of @var{expr}
-to be substituted for @var{expr} in the input expression.
-
-@c ===beg===
-@c expand ((a + b)^3);
-@c [_, ''_];
-@c [%i1, ''%i1];
-@c [aa : cc, bb : dd, cc : 17, dd : 29];
-@c foo_1 (x) := aa - bb * x;
-@c foo_1 (10);
-@c ''%;
-@c ''(foo_1 (10));
-@c foo_2 (x) := ''aa - ''bb * x;
-@c foo_2 (10);
-@c [x0 : x1, x1 : x2, x2 : x3];
-@c x0;
-@c ''x0;
-@c '' ''x0;
-@c ===end===
-@example
-(%i1) expand ((a + b)^3);
-                     3        2      2      3
-(%o1)               b  + 3 a b  + 3 a  b + a
-(%i2) [_, ''_];
-                         3    3        2      2      3
-(%o2)     [expand((b + a) ), b  + 3 a b  + 3 a  b + a ]
-(%i3) [%i1, ''%i1];
-                         3    3        2      2      3
-(%o3)     [expand((b + a) ), b  + 3 a b  + 3 a  b + a ]
-(%i4) [aa : cc, bb : dd, cc : 17, dd : 29];
-(%o4)                   [cc, dd, 17, 29]
-(%i5) foo_1 (x) := aa - bb * x;
-(%o5)                 foo_1(x) := aa - bb x
-(%i6) foo_1 (10);
-(%o6)                      cc - 10 dd
-(%i7) ''%;
-(%o7)                         - 273
-(%i8) ''(foo_1 (10));
-(%o8)                         - 273
-(%i9) foo_2 (x) := ''aa - ''bb * x;
-(%o9)                 foo_2(x) := cc - dd x
-(%i10) foo_2 (10);
-(%o10)                        - 273
-(%i11) [x0 : x1, x1 : x2, x2 : x3];
-(%o11)                    [x1, x2, x3]
-(%i12) x0;
-(%o12)                         x1
-(%i13) ''x0;
-(%o13)                         x2
-(%i14) '' ''x0;
-(%o14)                         x3
-@end example
-
-Applied to the operator of an expression,
-quote-quote changes the operator from a noun to a verb (if it is not already a 
-verb).
-
-@c ===beg==
-@c declare (foo, noun);
-@c foo (x) := x - 1729;
-@c foo (100);
-@c ''foo (100);
-@c ===end==
-@example
-(%i1) declare (foo, noun);
-(%o1)                         done
-(%i2) foo (x) := x - 1729;
-(%o2)                 ''foo(x) := x - 1729
-(%i3) foo (100);
-(%o3)                       foo(100)
-(%i4) ''foo (100);
-(%o4)                        - 1629
-@end example
-
-The quote-quote operator is applied by the input parser;
-it is not stored as part of a parsed input expression.
-
-@c ===beg===
-@c [aa : bb, cc : dd, bb : 1234, dd : 5678];
-@c aa + cc;
-@c display (_, op (_), args (_));
-@c ''(aa + cc);
-@c display (_, op (_), args (_));
-@c ===end===
-@example
-(%i1) [aa : bb, cc : dd, bb : 1234, dd : 5678];
-(%o1)                 [bb, dd, 1234, 5678]
-(%i2) aa + cc;
-(%o2)                        dd + bb
-(%i3) display (_, op (_), args (_));
-                           _ = cc + aa
-
-                         op(cc + aa) = +
-
-                    args(cc + aa) = [cc, aa]
-
-(%o3)                         done
-(%i4) ''(aa + cc);
-(%o4)                         6912
-(%i5) display (_, op (_), args (_));
-                           _ = dd + bb
-
-                         op(dd + bb) = +
-
-                    args(dd + bb) = [dd, bb]
-
-(%o5)                         done
-@end example
-
-Quote-quote causes evaluation when evaluation is otherwise suppressed,
-such as in function definitions, lambda expressions, and expressions quoted by single quote @code{'}.
-
-@c ===beg===
-@c foo_1a (x) := ''(integrate (log (x), x));
-@c foo_1b (x) := integrate (log (x), x);
-@c dispfun (foo_1a, foo_1b);
-@c integrate (log (x), x);
-@c foo_2a (x) := ''%;
-@c foo_2b (x) := %;
-@c dispfun (foo_2a, foo_2b);
-@c F : lambda ([u], diff (sin (u), u));
-@c G : lambda ([u], ''(diff (sin (u), u)));
-@c '(sum (a[k], k, 1, 3) + sum (b[k], k, 1, 3));
-@c '(''(sum (a[k], k, 1, 3)) + ''(sum (b[k], k, 1, 3)));
-@c ===end===
-@example
-(%i1) foo_1a (x) := ''(integrate (log (x), x));
-(%o1)               foo_1a(x) := x log(x) - x
-(%i2) foo_1b (x) := integrate (log (x), x);
-(%o2)           foo_1b(x) := integrate(log(x), x)
-(%i3) dispfun (foo_1a, foo_1b);
-(%t3)               foo_1a(x) := x log(x) - x
-
-(%t4)           foo_1b(x) := integrate(log(x), x)
-
-(%o4)                      [%t3, %t4]
-(%i4) integrate (log (x), x);
-(%o4)                     x log(x) - x
-(%i5) foo_2a (x) := ''%;
-(%o5)               foo_2a(x) := x log(x) - x
-(%i6) foo_2b (x) := %;
-(%o6)                    foo_2b(x) := %
-(%i7) dispfun (foo_2a, foo_2b);
-(%t7)               foo_2a(x) := x log(x) - x
-
-(%t8)                    foo_2b(x) := %
-
-(%o8)                      [%t7, %t8]
-(%i8) F : lambda ([u], diff (sin (u), u));
-(%o8)             lambda([u], diff(sin(u), u))
-(%i9) G : lambda ([u], ''(diff (sin (u), u)));
-(%o9)                  lambda([u], cos(u))
-(%i10) '(sum (a[k], k, 1, 3) + sum (b[k], k, 1, 3));
-(%o10)         sum(b , k, 1, 3) + sum(a , k, 1, 3)
-                    k                  k
-(%i11) '(''(sum (a[k], k, 1, 3)) + ''(sum (b[k], k, 1, 3)));
-(%o11)             b  + a  + b  + a  + b  + a
-                    3    3    2    2    1    1
-@end example
-
-@opencatbox
-@category{Evaluation} @category{Operators}
-@closecatbox
-
-@end deffn
+@c -----------------------------------------------------------------------------
 
 @c end concepts Command Line
-@node Functions and Variables for Command Line,  , Introduction to Command Line, Command Line
+
+@c -----------------------------------------------------------------------------
+@node Functions and Variables for Command Line, Functions and Variables for Display, Introduction to Command Line, Command Line
 @section Functions and Variables for Command Line
+@c -----------------------------------------------------------------------------
 
-@c NEEDS WORK, ESPECIALLY EXAMPLES
-@deffn {Function} alias (@var{new_name_1}, @var{old_name_1}, ..., @var{new_name_n}, @var{old_name_n})
-provides an
-alternate name for a (user or system) function, variable, array, etc.
-Any even number of arguments may be used.
+@c -----------------------------------------------------------------------------
+@anchor{__}
+@defvr {System variable} __
+@ifinfo
+@vrindex Current input expression
+@end ifinfo
 
-@opencatbox
-@category{Declarations and inferences}
-@closecatbox
-@end deffn
+@code{__} is the input expression currently being evaluated.  That is, while an
+input expression @var{expr} is being evaluated, @code{__} is @var{expr}.
 
-@defvr {Option variable} debugmode
-Default value: @code{false}
+@code{__} is assigned the input expression before the input is simplified or
+evaluated.  However, the value of @code{__} is simplified (but not evaluated)
+when it is displayed.
 
-When a Maxima error occurs, Maxima will start the debugger if @code{debugmode} is @code{true}.
-The user may enter commands to examine the call stack, set breakpoints, step
-through Maxima code, and so on. See @code{debugging} for a list of debugger commands.
+@code{__} is recognized by @mref{batch} and @mrefdot{load}  In a file processed
+by @code{batch}, @code{__} has the same meaning as at the interactive prompt.
+In a file processed by @code{load}, @code{__} is bound to the input expression
+most recently entered at the interactive prompt or in a batch file; @code{__}
+is not bound to the input expressions in the file being processed.  In
+particular, when @code{load (@var{filename})} is called from the interactive
+prompt, @code{__} is bound to @code{load (@var{filename})} while the file is
+being processed.
 
-Enabling @code{debugmode} will not catch Lisp errors.
-@c DO WE WANT TO SAY MORE ABOUT DEBUGGING LISP ERRORS ???
-@c I'M NOT CONVINCED WE WANT TO OPEN THAT CAN OF WORMS !!!
-
-@opencatbox
-@category{Debugging} @category{Global flags}
-@closecatbox
-
-@end defvr
-
-@c NEEDS CLARIFICATION
-@c VERY IMPORTANT !!
-@deffn {Function} ev (@var{expr}, @var{arg_1}, ..., @var{arg_n})
-Evaluates the expression @var{expr} in the environment
-specified by the arguments @var{arg_1}, ..., @var{arg_n}.
-The arguments are switches (Boolean flags), assignments, equations, and functions.
-@code{ev} returns the result (another expression) of the evaluation.
-
-The evaluation is carried out in steps, as follows.
-
-@enumerate
-@item
-First the environment is set up by scanning the arguments which may
-be any or all of the following.
-
-@itemize @bullet
-@item
-@code{simp} causes @var{expr} to be simplified regardless of the setting of the
-switch @code{simp} which inhibits simplification if @code{false}.
-@item
-@code{noeval} supresses the evaluation phase of @code{ev} (see step (4) below).
-This is useful in conjunction with the other switches and in causing
-@var{expr} to be resimplified without being reevaluated.
-@item
-@code{nouns} causes the evaluation of noun forms
-(typically unevaluated functions such as @code{'integrate} or @code{'diff})
-in @var{expr}.
-@item
-@code{expand} causes expansion.
-@item
-@code{expand (@var{m}, @var{n})} causes expansion, setting the values of @code{maxposex} and
-@code{maxnegex} to @var{m} and @var{n} respectively.
-@item
-@code{detout} causes any matrix inverses computed in @var{expr} to have their
-determinant kept outside of the inverse rather than dividing through
-each element.
-@item
-@code{diff} causes all differentiations indicated in @var{expr} to be performed.
-@item
-@code{derivlist (@var{x}, @var{y}, @var{z}, ...)} causes only differentiations with respect to
-the indicated variables.
-@item
-@code{risch} causes integrals in @var{expr} to be evaluated using the Risch
-algorithm. See @code{risch}. The standard integration routine is invoked when
-using the special symbol @code{nouns}.
-@item
-@code{float} causes non-integral rational numbers to be converted to floating
-point.
-@item
-@code{numer} causes some mathematical functions (including exponentiation)
-with numerical arguments to be evaluated in floating point.  It causes
-variables in @var{expr} which have been given numervals to be replaced by
-their values.  It also sets the @code{float} switch on.
-@item
-@code{pred} causes predicates (expressions which evaluate to @code{true} or @code{false})
-to be evaluated.
-@item
-@code{eval} causes an extra post-evaluation of @var{expr} to occur. (See step (5)
-below.)
-@code{eval} may occur multiple times.
-For each instance of @code{eval}, the expression is evaluated again.
-@item
-@code{A} where @code{A} is an atom declared to be an evaluation flag (see @code{evflag})
-causes @code{A} to be bound to
-@code{true} during the evaluation of @var{expr}.
-@item
-@code{V: expression} (or alternately @code{V=expression}) causes @code{V} to be bound to the
-value of @code{expression} during the evaluation of @var{expr}.  Note that if @code{V} is a
-Maxima option, then @code{expression} is used for its value during the
-evaluation of @var{expr}.  If more than one argument to @code{ev} is of this type
-then the binding is done in parallel.  If @code{V} is a non-atomic expression
-then a substitution rather than a binding is performed.
-@item
-@code{F} where @code{F}, a function name, has been declared to be an evaluation function (see @code{evfun})
-causes @code{F}
-to be applied to @var{expr}.
-@item
-Any other function names (e.g., @code{sum}) cause evaluation of occurrences
-of those names in @var{expr} as though they were verbs.
-@item
-In addition a function occurring in @var{expr} (say @code{F(x)}) may be defined
-locally for the purpose of this evaluation of @var{expr} by giving
-@code{F(x) := expression} as an argument to @code{ev}.
-@item
-If an atom not mentioned above or a subscripted variable or
-subscripted expression was given as an argument, it is evaluated and
-if the result is an equation or assignment then the indicated binding
-or substitution is performed.  If the result is a list then the
-members of the list are treated as if they were additional arguments
-given to @code{ev}. This permits a list of equations to be given (e.g. @code{[X=1, Y=A**2]})
-or a list of names of equations (e.g., @code{[%t1, %t2]} where @code{%t1} and
-@code{%t2} are equations) such as that returned by @code{solve}.
-@end itemize
-
-The arguments of @code{ev} may be given in any order with the exception of
-substitution equations which are handled in sequence, left to right,
-and evaluation functions which are composed, e.g., @code{ev (@var{expr}, ratsimp, realpart)} is
-handled as @code{realpart (ratsimp (@var{expr}))}.
-
-The @code{simp}, @code{numer}, and @code{float} switches may also be set locally
-in a block, or globally in Maxima so that they will remain in effect until being
-reset.
-
-If @var{expr} is a canonical rational expression (CRE),
-then the expression returned by @code{ev} is also a CRE,
-provided the @code{numer} and @code{float} switches are not both @code{true}.
-
-@item
-During step (1), a list is made of the non-subscripted
-variables appearing on the left side of equations in the arguments or in
-the value of some arguments if the value is an equation.  The variables
-(subscripted variables which do not have associated array
-functions as well as non-subscripted variables) in the expression @var{expr} are
-replaced by their global values, except for those appearing in this
-list.  Usually, @var{expr} is just a label or @code{%}
-(as in @code{%i2} in the example below), so this
-step simply retrieves the expression named by the label, so that @code{ev}
-may work on it.
-
-@item
-If any substitutions are indicated by the arguments, they are
-carried out now.
-
-@item
-The resulting expression is then re-evaluated (unless one of
-the arguments was @code{noeval}) and simplified according to the arguments.  Note that
-any function calls in @var{expr} will be carried out after the variables in
-it are evaluated and that @code{ev(F(x))} thus may behave like @code{F(ev(x))}.
-
-@item
-For each instance of @code{eval} in the arguments, steps (3) and (4) are repeated.
-@end enumerate
+See also @mref{_} and @mrefdot{%}
 
 Examples:
 
 @c ===beg===
-@c sin(x) + cos(y) + (w+1)^2 + 'diff (sin(w), w);
-@c ev (%, numer, expand, diff, x=2, y=1);
+@c print ("I was called as", __);
+@c foo (__);
+@c g (x) := (print ("Current input expression =", __), 0);
+@c [aa : 1, bb : 2, cc : 3];
+@c (aa + bb + cc)/(dd + ee + g(x));
 @c ===end===
 @example
-(%i1) sin(x) + cos(y) + (w+1)^2 + 'diff (sin(w), w);
-                                     d                    2
-(%o1)              cos(y) + sin(x) + -- (sin(w)) + (w + 1)
-                                     dw
-(%i2) ev (%, numer, expand, diff, x=2, y=1);
-                               2
-(%o2)                cos(w) + w  + 2 w + 2.449599732693821
-@end example
-
-An alternate top level syntax has been provided for @code{ev}, whereby one
-may just type in its arguments, without the @code{ev()}.  That is, one may
-write simply
-
-@example
-@var{expr}, @var{arg_1}, ..., @var{arg_n}
-@end example
-
-This is not permitted as part of
-another expression, e.g., in functions, blocks, etc.
-
-Notice the parallel binding process in the following example.
-
-@example
-(%i3) programmode: false;
-(%o3)                                false
-(%i4) x+y, x: a+y, y: 2;
-(%o4)                              y + a + 2
-(%i5) 2*x - 3*y = 3$
-(%i6) -3*x + 2*y = -4$
-(%i7) solve ([%o5, %o6]);
-Solution
-
-                                          1
-(%t7)                               y = - -
-                                          5
-
-                                         6
-(%t8)                                x = -
-                                         5
-(%o8)                            [[%t7, %t8]]
-(%i8) %o6, %o8;
-(%o8)                              - 4 = - 4
-(%i9) x + 1/x > gamma (1/2);
-                                   1
-(%o9)                          x + - > sqrt(%pi)
-                                   x
-(%i10) %, numer, x=1/2;
-(%o10)                      2.5 > 1.772453850905516
-(%i11) %, pred;
-(%o11)                               true
+(%i1) print ("I was called as", __);
+I was called as print(I was called as, __) 
+(%o1)              print(I was called as, __)
+(%i2) foo (__);
+(%o2)                     foo(foo(__))
+(%i3) g (x) := (print ("Current input expression =", __), 0);
+(%o3) g(x) := (print("Current input expression =", __), 0)
+(%i4) [aa : 1, bb : 2, cc : 3];
+(%o4)                       [1, 2, 3]
+(%i5) (aa + bb + cc)/(dd + ee + g(x));
+                            cc + bb + aa
+Current input expression = -------------- 
+                           g(x) + ee + dd
+                                6
+(%o5)                        -------
+                             ee + dd
 @end example
 
 @opencatbox
-@category{Evaluation}
+@category{Global variables}
+@closecatbox
+@end defvr
+
+@c -----------------------------------------------------------------------------
+@anchor{_}
+@defvr {System variable} _
+@ifinfo
+@vrindex Previous input
+@end ifinfo
+
+@code{_} is the most recent input expression (e.g., @code{%i1}, @code{%i2},
+@code{%i3}, @dots{}).
+
+@code{_} is assigned the input expression before the input is simplified or
+evaluated.  However, the value of @code{_} is simplified (but not evaluated)
+when it is displayed.
+
+@code{_} is recognized by @mref{batch} and @mrefdot{load}  In a file processed
+by @code{batch}, @code{_} has the same meaning as at the interactive prompt.
+In a file processed by @code{load}, @code{_} is bound to the input expression
+most recently evaluated at the interactive prompt or in a batch file; @code{_}
+is not bound to the input expressions in the file being processed.
+
+See also @mref{__} and @mrefdot{%}
+
+Examples:
+
+@c ===beg===
+@c 13 + 29;
+@c :lisp $_
+@c _;
+@c sin (%pi/2);
+@c :lisp $_
+@c _;
+@c a: 13$
+@c b: 29$
+@c a + b;
+@c :lisp $_
+@c _;
+@c a + b;
+@c ev (_);
+@c ===end===
+@example
+(%i1) 13 + 29;
+(%o1)                          42
+(%i2) :lisp $_
+((MPLUS) 13 29)
+(%i2) _;
+(%o2)                          42
+(%i3) sin (%pi/2);
+(%o3)                           1
+(%i4) :lisp $_
+((%SIN) ((MQUOTIENT) $%PI 2))
+(%i4) _;
+(%o4)                           1
+(%i5) a: 13$
+(%i6) b: 29$
+(%i7) a + b;
+(%o7)                          42
+(%i8) :lisp $_
+((MPLUS) $A $B)
+(%i8) _;
+(%o8)                         b + a
+(%i9) a + b;
+(%o9)                          42
+(%i10) ev (_);
+(%o10)                         42
+@end example
+
+@opencatbox
+@category{Console interaction} @category{Global variables}
+@closecatbox
+@end defvr
+
+@c -----------------------------------------------------------------------------
+@anchor{%}
+@defvr {System variable} %
+@ifinfo
+@vrindex Previous output
+@end ifinfo
+
+@code{%} is the output expression (e.g., @code{%o1}, @code{%o2}, @code{%o3},
+@dots{}) most recently computed by Maxima, whether or not it was displayed.
+
+@code{%} is recognized by @mref{batch} and @mrefdot{load}  In a file processed
+by @code{batch}, @code{%} has the same meaning as at the interactive prompt.
+In a file processed by @code{load}, @code{%} is bound to the output expression
+most recently computed at the interactive prompt or in a batch file; @code{%}
+is not bound to output expressions in the file being processed.
+
+See also @mrefcomma{_} @mrefcomma{%%} and @mrefdot{%th}
+
+@opencatbox
+@category{Console interaction} @category{Global variables}
+@closecatbox
+@end defvr
+
+@c -----------------------------------------------------------------------------
+@anchor{%%}
+@defvr {System variable} %%
+@ifinfo
+@vrindex Previous result in compound expression
+@end ifinfo
+
+In compound statements, namely @mrefcomma{block} @mrefcomma{lambda} or
+@code{(@var{s_1}, ..., @var{s_n})}, @code{%%} is the value of the previous
+statement.
+
+At the first statement in a compound statement, or outside of a compound
+statement, @code{%%} is undefined.
+
+@code{%%} is recognized by @mref{batch} and @mrefcomma{load} and it has the
+same meaning as at the interactive prompt.
+
+See also @mrefdot{%}
+
+Examples:
+
+The following two examples yield the same result.
+
+@example
+(%i1) block (integrate (x^5, x), ev (%%, x=2) - ev (%%, x=1));
+                               21
+(%o1)                          --
+                               2
+(%i2) block ([prev], prev: integrate (x^5, x),
+               ev (prev, x=2) - ev (prev, x=1));
+                               21
+(%o2)                          --
+                               2
+
+@end example
+
+A compound statement may comprise other compound statements.  Whether a
+statement be simple or compound, @code{%%} is the value of the previous
+statement.
+
+@example
+(%i3) block (block (a^n, %%*42), %%/6);
+                                 n
+(%o3)                         7 a
+@end example
+
+Within a compound statement, the value of @code{%%} may be inspected at a break
+prompt, which is opened by executing the @mref{break} function.  For example,
+entering @code{%%;} in the following example yields @code{42}.
+
+@example
+(%i4) block (a: 42, break ())$
+
+Entering a Maxima break point. Type 'exit;' to resume.
+_%%;
+42
+_
+@end example
+
+@opencatbox
+@category{Global variables}
+@closecatbox
+@end defvr
+
+@c -----------------------------------------------------------------------------
+@anchor{%th}
+@deffn {Function} %th (@var{i})
+@ifinfo
+@fnindex N'th previous output
+@end ifinfo
+
+The value of the @var{i}'th previous output expression.  That is, if the next
+expression to be computed is the @var{n}'th output, @code{%th (@var{m})} is the
+(@var{n} - @var{m})'th output.
+
+@code{%th} is recognized by @mref{batch} and @mrefdot{load}  In a file processed
+by @code{batch}, @code{%th} has the same meaning as at the interactive prompt.
+In a file processed by @code{load}, @code{%th} refers to output expressions most
+recently computed at the interactive prompt or in a batch file; @code{%th} does
+not refer to output expressions in the file being processed.
+
+See also @mref{%} and @mrefdot{%%}
+
+Example:
+
+@code{%th} is useful in @code{batch} files or for referring to a group of
+output expressions.  This example sets @code{s} to the sum of the last five
+output expressions.
+
+@example
+(%i1) 1;2;3;4;5;
+(%o1)                           1
+(%o2)                           2
+(%o3)                           3
+(%o4)                           4
+(%o5)                           5
+(%i6) block (s: 0, for i:1 thru 5 do s: s + %th(i), s);
+(%o6)                          15
+@end example
+
+@opencatbox
+@category{Console interaction}
 @closecatbox
 @end deffn
 
 @c -----------------------------------------------------------------------------
-@defvr {Special symbol} eval
-As an argument in a call to @code{ev (@var{expr})}, @code{eval} causes an extra
-evaluation of @var{expr}. See @code{ev}.
+@anchor{?}
+@deffn {Special symbol} ?
+@ifinfo
+@fnindex Fetch documentation
+@end ifinfo
+
+As prefix to a function or variable name, @code{?} signifies that the name is a
+Lisp name, not a Maxima name.  For example, @code{?round} signifies the Lisp
+function @code{ROUND}.  See @ref{Lisp and Maxima} for more on this point.
+
+The notation @code{? word} (a question mark followed a word, separated by
+whitespace) is equivalent to @code{describe("word")}.  The question mark must
+occur at the beginning of an input line; otherwise it is not recognized as a
+request for documentation.  See also @mrefdot{describe}
+
+@opencatbox
+@category{Help} @category{Console interaction}
+@closecatbox
+@end deffn
+
+@c -----------------------------------------------------------------------------
+@anchor{??}
+@deffn {Special symbol} ??
+@ifinfo
+@fnindex Fetch documentation (inexact search)
+@end ifinfo
+
+The notation @code{?? word} (@code{??} followed a word, separated by whitespace)
+is equivalent to @code{describe("word", inexact)}.  The question mark must occur
+at the beginning of an input line; otherwise it is not recognized as a request
+for documentation.  See also @mrefdot{describe}
+
+@opencatbox
+@category{Help} @category{Console interaction}
+@closecatbox
+@end deffn
+
+@c -----------------------------------------------------------------------------
+@anchor{inchar}
+@defvr {Option variable} inchar
+Default value: @code{%i}
+
+@code{inchar} is the prefix of the labels of expressions entered by the user.
+Maxima automatically constructs a label for each input expression by 
+concatenating @code{inchar} and @mrefdot{linenum}
+
+@code{inchar} may be assigned any string or symbol, not necessarily a single 
+character.  Because Maxima internally takes into account only the first char of
+the prefix, the prefixes @code{inchar}, @mrefcomma{outchar} and
+@mref{linechar} should have a different first char.  Otherwise some commands
+like @code{kill(inlables)} do not work as expected.
+
+See also @code{labels}.
 
 Example:
 
 @c ===beg===
-@c [a:b,b:c,c:d,d:e];
-@c a;
-@c ev(a);
-@c ev(a),eval;
-@c a,eval,eval;
+@c inchar: "input";
+@c expand((a+b)^3);
 @c ===end===
 @example
-(%i1) [a:b,b:c,c:d,d:e];
-(%o1)                            [b, c, d, e]
-(%i2) a;
-(%o2)                                  b
-(%i3) ev(a);
-(%o3)                                  c
-(%i4) ev(a),eval;
-(%o4)                                  e
-(%i5) a,eval,eval;
-(%o5)                                  e
+(%i1) inchar: "input";
+(%o1)                         input
+(input2) expand((a+b)^3);
+                     3        2      2      3
+(%o2)               b  + 3 a b  + 3 a  b + a
+(input3)
 @end example
 
 @opencatbox
-@category{Evaluation flags}
+@category{Display flags and variables}
 @closecatbox
 @end defvr
 
-@defvr {Property} evflag
-When a symbol @var{x} has the @code{evflag} property,
-the expressions @code{ev(@var{expr}, @var{x})} and @code{@var{expr}, @var{x}}
-(at the interactive prompt) are equivalent to @code{ev(@var{expr}, @var{x} = true)}.
-That is, @var{x} is bound to @code{true} while @var{expr} is evaluated.
+@c -----------------------------------------------------------------------------
+@anchor{infolists}
+@defvr {System variable} infolists
+Default value: @code{[]}
 
-The expression @code{declare(@var{x}, evflag)}
-gives the @code{evflag} property to the variable @var{x}.
+@code{infolists} is a list of the names of all of the information
+lists in Maxima.  These are:
 
-The flags which have the @code{evflag} property by default are the following:
-@c FOLLOWING LIST CONSTRUCTED FROM LIST UNDER (prog1 '(evflag properties) ...)
-@c NEAR LINE 2649 OF mlisp.lisp AT PRESENT (2004/11).
-
-@code{algebraic},
-@code{cauchysum},
-@code{demoivre},
-@code{dotscrules},
-@code{%emode},
-@code{%enumer},
-@code{exponentialize},
-@code{exptisolate},
-@code{factorflag},
-@code{float},
-@code{halfangles},
-@code{infeval},
-@code{isolate_wrt_times},
-@code{keepfloat},
-@code{letrat},
-@code{listarith},
-@code{logabs},
-@code{logarc},
-@code{logexpand},
-@code{lognegint},
-@code{lognumer},
-@code{m1pbranch},
-@code{numer_pbranch},
-@code{programmode},
-@code{radexpand},
-@code{ratalgdenom},
-@code{ratfac},
-@code{ratmx},
-@code{ratsimpexpons},
-@code{simp},
-@c added 10/2009 (DK)
-@code{simpproduct},
-@code{simpsum},
-@code{sumexpand}, and
-@code{trigexpand}.
-
-Examples:
-
-@c ===beg===
-@c sin (1/2);
-@c sin (1/2), float;
-@c sin (1/2), float=true;
-@c simp : false;
-@c 1 + 1;
-@c 1 + 1, simp;
-@c simp : true;
-@c sum (1/k^2, k, 1, inf);
-@c sum (1/k^2, k, 1, inf), simpsum;
-@c declare (aa, evflag);
-@c if aa = true then YES else NO;
-@c if aa = true then YES else NO, aa;
-@c ===end===
-@example
-(%i1) sin (1/2);
-                                 1
-(%o1)                        sin(-)
-                                 2
-(%i2) sin (1/2), float;
-(%o2)                   0.479425538604203
-(%i3) sin (1/2), float=true;
-(%o3)                   0.479425538604203
-(%i4) simp : false;
-(%o4)                         false
-(%i5) 1 + 1;
-(%o5)                         1 + 1
-(%i6) 1 + 1, simp;
-(%o6)                           2
-(%i7) simp : true;
-(%o7)                         true
-(%i8) sum (1/k^2, k, 1, inf);
-                            inf
-                            ====
-                            \     1
-(%o8)                        >    --
-                            /      2
-                            ====  k
-                            k = 1
-(%i9) sum (1/k^2, k, 1, inf), simpsum;
-                                 2
-                              %pi
-(%o9)                         ----
-                               6
-(%i10) declare (aa, evflag);
-(%o10)                        done
-(%i11) if aa = true then YES else NO;
-(%o11)                         NO
-(%i12) if aa = true then YES else NO, aa;
-(%o12)                         YES
-@end example
+@table @code
+@item labels
+All bound @code{%i}, @code{%o}, and @code{%t} labels.
+@item values
+All bound atoms which are user variables, not Maxima options or switches,
+created by @mref{:} or @mref{::} or functional binding.
+@c WHAT IS INTENDED BY "FUNCTIONAL BINDING" HERE ??
+@item functions
+All user-defined functions, created by @mref{:=} or @mrefdot{define}
+@item arrays
+All declared and undeclared arrays, created by @code{:}, @code{::}, or
+@code{:=}.
+@c AREN'T THERE OTHER MEANS OF CREATING ARRAYS ??
+@item macros
+All user-defined macro functions, created by @mrefdot{::=}
+@item myoptions
+All options ever reset by the user (whether or not they
+are later reset to their default values).
+@item rules
+All user-defined pattern matching and simplification rules, created
+by @mrefcomma{tellsimp} @mrefcomma{tellsimpafter} @mrefcomma{defmatch} or
+@mrefdot{defrule}
+@item aliases
+All atoms which have a user-defined alias, created by the @mrefcomma{alias}@w{}
+@mrefcomma{ordergreat} @mref{orderless} functions or by declaring the atom as a
+@mref{noun} with @mrefdot{declare}
+@item dependencies
+All atoms which have functional dependencies, created by the
+@mref{depends} or @mref{gradef} functions.
+@item gradefs
+All functions which have user-defined derivatives, created by the
+@mref{gradef} function.
+@c UMM, WE REALLY NEED TO BE SPECIFIC -- WHAT DOES "ETC" CONTAIN HERE ??
+@item props
+All atoms which have any property other than those mentioned above, such as
+properties established by @mref{atvalue} or @mref{matchdeclare}, etc.,
+as well as properties established in the @mref{declare} function.
+@item let_rule_packages
+All user-defined @mref{let} rule packages
+plus the special package @mrefdot{default_let_rule_package}
+(@code{default_let_rule_package} is the name of the rule package used when
+one is not explicitly set by the user.)
+@end table
 
 @opencatbox
-@category{Evaluation flags} @category{Simplification flags and variables}
-@closecatbox
-
-@end defvr
-
-@defvr {Property} evfun
-When a function @var{F} has the @code{evfun} property,
-the expressions @code{ev(@var{expr}, @var{F})} and @code{@var{expr}, @var{F}}
-(at the interactive prompt)
-are equivalent to @code{@var{F}(ev(@var{expr}))}.
-
-If two or more @code{evfun} functions @var{F}, @var{G}, etc., are specified,
-the functions are applied in the order that they are specified.
-
-The expression @code{declare(@var{F}, evfun)}
-gives the @code{evfun} property to the function @var{F}.
-
-The functions which have the @code{evfun} property by default are the following:
-@c FOLLOWING LIST CONSTRUCTED FROM LIST UNDER (prog1 '(evfun properties) ...)
-@c NEAR LINE 2643 IN mlisp.lisp AT PRESENT (2004/11).
-
-@code{bfloat},
-@code{factor},
-@code{fullratsimp},
-@code{logcontract},
-@code{polarform},
-@code{radcan},
-@code{ratexpand},
-@code{ratsimp},
-@code{rectform},
-@code{rootscontract},
-@code{trigexpand}, and
-@code{trigreduce}.
-
-Examples:
-
-@c ===beg===
-@c x^3 - 1;
-@c x^3 - 1, factor;
-@c factor (x^3 - 1);
-@c cos(4 * x) / sin(x)^4;
-@c cos(4 * x) / sin(x)^4, trigexpand;
-@c cos(4 * x) / sin(x)^4, trigexpand, ratexpand;
-@c ratexpand (trigexpand (cos(4 * x) / sin(x)^4));
-@c declare ([F, G], evfun);
-@c (aa : bb, bb : cc, cc : dd);
-@c aa;
-@c aa, F;
-@c F (aa);
-@c F (ev (aa));
-@c aa, F, G;
-@c G (F (ev (aa)));
-@c ===end===
-@example
-(%i1) x^3 - 1;
-                              3
-(%o1)                        x  - 1
-(%i2) x^3 - 1, factor;
-                                2
-(%o2)                 (x - 1) (x  + x + 1)
-(%i3) factor (x^3 - 1);
-                                2
-(%o3)                 (x - 1) (x  + x + 1)
-(%i4) cos(4 * x) / sin(x)^4;
-@group
-                            cos(4 x)
-(%o4)                       --------
-                               4
-                            sin (x)
-@end group
-(%i5) cos(4 * x) / sin(x)^4, trigexpand;
-                 4           2       2         4
-              sin (x) - 6 cos (x) sin (x) + cos (x)
-(%o5)         -------------------------------------
-                                4
-                             sin (x)
-(%i6) cos(4 * x) / sin(x)^4, trigexpand, ratexpand;
-                           2         4
-                      6 cos (x)   cos (x)
-(%o6)               - --------- + ------- + 1
-                          2          4
-                       sin (x)    sin (x)
-(%i7) ratexpand (trigexpand (cos(4 * x) / sin(x)^4));
-                           2         4
-                      6 cos (x)   cos (x)
-(%o7)               - --------- + ------- + 1
-                          2          4
-                       sin (x)    sin (x)
-(%i8) declare ([F, G], evfun);
-(%o8)                         done
-(%i9) (aa : bb, bb : cc, cc : dd);
-(%o9)                          dd
-(%i10) aa;
-(%o10)                         bb
-(%i11) aa, F;
-(%o11)                        F(cc)
-(%i12) F (aa);
-(%o12)                        F(bb)
-(%i13) F (ev (aa));
-(%o13)                        F(cc)
-(%i14) aa, F, G;
-(%o14)                      G(F(cc))
-(%i15) G (F (ev (aa)));
-(%o15)                      G(F(cc))
-@end example
-
-@opencatbox
-@category{Evaluation flags}
-@closecatbox
-@end defvr
-
-@c NEEDS WORK
-@defvr {Option variable} infeval
-Enables "infinite evaluation" mode.  @code{ev} repeatedly
-evaluates an expression until it stops changing.  To prevent a
-variable, say @code{X}, from being evaluated away in this mode, simply
-include @code{X='X} as an argument to @code{ev}.  Of course expressions such as
-@code{ev (X, X=X+1, infeval)} will generate an infinite loop.
-
-@opencatbox
-@category{Evaluation flags}
+@category{Declarations and inferences} @category{Global variables}
 @closecatbox
 @end defvr
 
 @c REVIEW FOR ACCURACY AND COMPLETENESS
 @c THIS ITEM IS VERY IMPORTANT !!
 @c NEEDS EXAMPLES
-@deffn {Function} kill (@var{a_1}, ..., @var{a_n})
+
+@c -----------------------------------------------------------------------------
+@anchor{kill}
+@deffn  {Function} kill (@var{a_1}, @dots{}, @var{a_n})
 @deffnx {Function} kill (labels)
 @deffnx {Function} kill (inlabels, outlabels, linelabels)
 @deffnx {Function} kill (@var{n})
 @deffnx {Function} kill ([@var{m}, @var{n}])
-@deffnx {Function} kill (values, functions, arrays, ...)
+@deffnx {Function} kill (values, functions, arrays, @dots{})
 @deffnx {Function} kill (all)
-@deffnx {Function} kill (allbut (@var{a_1}, ..., @var{a_n}))
+@deffnx {Function} kill (allbut (@var{a_1}, @dots{}, @var{a_n}))
 
 Removes all bindings (value, function, array, or rule) from the arguments
-@var{a_1}, ..., @var{a_n}.
-An argument @var{a_k} may be a symbol or a single array element.
-When @var{a_k} is a single array element, @code{kill} unbinds that element
-without affecting any other elements of the array.
+@var{a_1}, @dots{}, @var{a_n}.  An argument @var{a_k} may be a symbol or a
+single array element.  When @var{a_k} is a single array element, @code{kill}
+unbinds that element without affecting any other elements of the array.
 
-Several special arguments are recognized.
-Different kinds of arguments
+Several special arguments are recognized.  Different kinds of arguments
 may be combined, e.g., @code{kill (inlabels, functions, allbut (foo, bar))}.
 
-@code{kill (labels)} unbinds
-all input, output, and intermediate expression labels created so far.
-@code{kill (inlabels)} unbinds only input labels
-which begin with the current value of @code{inchar}.
-Likewise,
-@code{kill (outlabels)} unbinds only output labels
-which begin with the current value of @code{outchar},
-and @code{kill (linelabels)} unbinds only intermediate expression labels
-which begin with the current value of @code{linechar}.
+@code{kill (labels)} unbinds all input, output, and intermediate expression
+labels created so far.  @code{kill (inlabels)} unbinds only input labels which
+begin with the current value of @mrefdot{inchar}  Likewise,
+@code{kill (outlabels)} unbinds only output labels which begin with the current
+value of @mrefcomma{outchar} and @code{kill (linelabels)} unbinds only
+intermediate expression labels which begin with the current value of
+@mrefdot{linechar}
 
 @code{kill (@var{n})}, where @var{n} is an integer,
 unbinds the @var{n} most recent input and output labels.
 
-@code{kill ([@var{m}, @var{n}])} unbinds input and output labels @var{m} through @var{n}.
+@code{kill ([@var{m}, @var{n}])} unbinds input and output labels @var{m} through
+@var{n}.
 
-@code{kill (@var{infolist})}, where @var{infolist} is any item in @code{infolists}
-(such as @code{values}, @code{functions}, or @code{arrays})
-unbinds all items in @var{infolist}.
-See also @code{infolists}.
+@code{kill (@var{infolist})}, where @var{infolist} is any item in
+@code{infolists} (such as @mrefcomma{values} @mrefcomma{functions} or
+@mref{arrays}) unbinds all items in @var{infolist}.
+See also @mrefdot{infolists}
 
-@code{kill (all)} unbinds all items on all infolists.
-@code{kill (all)} does not reset global variables to their default values;
-see @code{reset} on this point.
+@code{kill (all)} unbinds all items on all infolists.  @code{kill (all)} does
+not reset global variables to their default values; see @mref{reset} on this
+point.
 
-@code{kill (allbut (@var{a_1}, ..., @var{a_n}))}
-unbinds all items on all infolists except for @var{a_1}, ..., @var{a_n}.
-@code{kill (allbut (@var{infolist}))} unbinds all items except for the ones on @var{infolist},
-where @var{infolist} is @code{values}, @code{functions}, @code{arrays}, etc.
+@code{kill (allbut (@var{a_1}, ..., @var{a_n}))} unbinds all items on all
+infolists except for @var{a_1}, @dots{}, @var{a_n}.
+@code{kill (allbut (@var{infolist}))} unbinds all items except for the ones on
+@var{infolist}, where @var{infolist} is @mrefcomma{values}@w{}
+@mrefcomma{functions} @mrefcomma{arrays} etc.
 
-The memory taken up by a bound property is not released until all symbols
-are unbound from it.
-In particular, to release the memory taken up by the value of a symbol,
-one unbinds the output label which shows the bound value, as well as unbinding the symbol itself.
+The memory taken up by a bound property is not released until all symbols are
+unbound from it.  In particular, to release the memory taken up by the value of
+a symbol, one unbinds the output label which shows the bound value, as well as
+unbinding the symbol itself.
 
-@code{kill} quotes its arguments.
-The quote-quote operator @code{'@w{}'} defeats quotation.
+@code{kill} quotes its arguments.  The quote-quote operator @code{'@w{}'}
+defeats quotation.
 
 @code{kill (@var{symbol})} unbinds all properties of @var{symbol}.  In contrast,
-the functions @code{remvalue}, @code{remfunction}, @code{remarray}, and 
-@code{remrule} unbind a specific property.
+the functions @mrefcomma{remvalue} @mrefcomma{remfunction}@w{}
+@mrefcomma{remarray} and @mref{remrule} unbind a specific property.
 
 @code{kill} always returns @code{done}, even if an argument has no binding.
 
@@ -903,55 +476,88 @@ the functions @code{remvalue}, @code{remfunction}, @code{remarray}, and
 @closecatbox
 @end deffn
 
-@deffn {Function} labels (@var{symbol})
+@c -----------------------------------------------------------------------------
+@anchor{labels}
+@deffn  {Function} labels (@var{symbol})
 @deffnx {System variable} labels
-Returns the list of input, output, or intermediate expression labels which begin with @var{symbol}.
-Typically @var{symbol} is the value of @code{inchar}, @code{outchar}, or @code{linechar}.
-The label character may be given with or without a percent sign,
-so, for example, @code{i} and @code{%i} yield the same result.
+
+Returns the list of input, output, or intermediate expression labels which begin
+with @var{symbol}.  Typically @var{symbol} is the value of
+@mrefcomma{inchar} @mrefcomma{outchar} or @mrefdot{linechar}  The label
+character may be given with or without a percent sign, so, for example, @code{i}
+and @code{%i} yield the same result.
 
 If no labels begin with @var{symbol}, @code{labels} returns an empty list.
 
-The function @code{labels} quotes its argument.
-The quote-quote operator @code{'@w{}'} defeats quotation.
-For example,
-@code{labels (''inchar)} returns the input labels which begin with the current input label character.
+The function @code{labels} quotes its argument.  The quote-quote operator
+@code{'@w{}'} defeats quotation.  For example, @code{labels (''inchar)} returns
+the input labels which begin with the current input label character.
 
-The variable @code{labels} is the list of input, output, and intermediate expression labels,
-including all previous labels if @code{inchar}, @code{outchar}, or @code{linechar} were redefined.
+The variable @code{labels} is the list of input, output, and intermediate
+expression labels, including all previous labels if @code{inchar},
+@code{outchar}, or @code{linechar} were redefined.
 
-By default, Maxima displays the result of each user input expression,
-giving the result an output label.
-The output display is suppressed by terminating the input with @code{$} (dollar sign)
-instead of @code{;} (semicolon).
-An output label is constructed and bound to the result, but not displayed,
-and the label may be referenced in the same way as displayed output labels.
-See also @code{%}, @code{%%}, and @code{%th}.
+By default, Maxima displays the result of each user input expression, giving the
+result an output label.  The output display is suppressed by terminating the
+input with @code{$} (dollar sign) instead of @code{;} (semicolon).  An output
+label is constructed and bound to the result, but not displayed, and the label
+may be referenced in the same way as displayed output labels.  See also
+@mrefcomma{%} @mrefcomma{%%} and @mrefdot{%th}
 
-Intermediate expression labels can be generated by some functions.
-The flag @code{programmode} controls whether @code{solve} and some other functions
-generate intermediate expression labels instead of returning a list of expressions.
-Some other functions, such as @code{ldisplay}, always generate intermediate expression labels.
+Intermediate expression labels can be generated by some functions.  The option
+variable @mref{programmode} controls whether @mref{solve} and some other
+functions generate intermediate expression labels instead of returning a list of
+expressions.  Some other functions, such as @mrefcomma{ldisplay} always generate
+intermediate expression labels.
 
-See also @code{inchar}, @code{outchar}, @code{linechar}, and @code{infolists}.
+See also @mrefcomma{inchar} @mrefcomma{outchar} @mrefcomma{linechar} and
+@mrefdot{infolists}
 
 @opencatbox
 @category{Display functions} @category{Display flags and variables} @category{Console interaction}
 @closecatbox
-
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{linechar}
+@defvr {Option variable} linechar
+Default value: @code{%t}
+
+@code{linechar} is the prefix of the labels of intermediate expressions 
+generated by Maxima.  Maxima constructs a label for each intermediate expression 
+(if displayed) by concatenating @code{linechar} and @mrefdot{linenum}
+
+@code{linechar} may be assigned any string or symbol, not necessarily a single 
+character.  Because Maxima internally takes into account only the first char of
+the prefix, the prefixes @mrefcomma{inchar} @mrefcomma{outchar} and
+@code{linechar} should have a different first char.  Otherwise some commands
+like @code{kill(inlables)} do not work as expected.
+
+Intermediate expressions might or might not be displayed.
+See @mref{programmode} and @mrefdot{labels}
+
+@opencatbox
+@category{Display flags and variables}
+@closecatbox
+@end defvr
+
 @c EXPAND; SHOW WHAT HAPPENS WHEN linenum IS ASSIGNED A VALUE
+
+@c -----------------------------------------------------------------------------
+@anchor{linenum}
 @defvr {System variable} linenum
+
 The line number of the current pair of input and output expressions.
 
 @opencatbox
 @category{Display flags and variables} @category{Console interaction}
 @closecatbox
-
 @end defvr
 
 @c NEEDS WORK
+
+@c -----------------------------------------------------------------------------
+@anchor{myoptions}
 @defvr {System variable} myoptions
 Default value: @code{[]}
 
@@ -961,52 +567,102 @@ whether or not they get reset to their default value.
 @opencatbox
 @category{Global variables} @category{Session management} @category{Console interaction}
 @closecatbox
-
 @end defvr
 
+@c -----------------------------------------------------------------------------
+@anchor{nolabels}
 @defvr {Option variable} nolabels
 Default value: @code{false}
 
-When @code{nolabels} is @code{true},
-input and output result labels
-(@code{%i} and @code{%o}, respectively)
-are displayed,
-but the labels are not bound to results,
-and the labels are not appended to the @code{labels} list.
-Since labels are not bound to results,
-garbage collection can recover the memory taken up by the results.
+When @code{nolabels} is @code{true}, input and output result labels (@code{%i}
+and @code{%o}, respectively) are displayed, but the labels are not bound to
+results, and the labels are not appended to the @mref{labels} list.  Since
+labels are not bound to results, garbage collection can recover the memory taken
+up by the results.
 
-Otherwise input and output result labels are bound to results,
-and the labels are appended to the @code{labels} list.
+Otherwise input and output result labels are bound to results, and the labels
+are appended to the @code{labels} list.
 
 Intermediate expression labels (@code{%t}) are not affected by @code{nolabels};
-whether @code{nolabels} is @code{true} or @code{false},
-intermediate expression labels are bound and appended to the @code{labels} list.
+whether @code{nolabels} is @code{true} or @code{false}, intermediate expression
+labels are bound and appended to the @code{labels} list.
 
-See also @code{batch}, @code{load}, and @code{labels}.
+See also @mrefcomma{batch} @mrefcomma{load} and @mrefdot{labels}
 
 @opencatbox
 @category{Global flags} @category{Session management}
 @closecatbox
-
 @end defvr
 
 @c NEEDS WORK
+
+@c -----------------------------------------------------------------------------
+@anchor{optionset}
 @defvr {Option variable} optionset
 Default value: @code{false}
 
-When @code{optionset} is @code{true}, Maxima prints out a
-message whenever a Maxima option is reset.  This is useful if the
-user is doubtful of the spelling of some option and wants to make sure
-that the variable he assigned a value to was truly an option variable.
+When @code{optionset} is @code{true}, Maxima prints out a message whenever a
+Maxima option is reset.  This is useful if the user is doubtful of the spelling
+of some option and wants to make sure that the variable he assigned a value to
+was truly an option variable.
+
+Example:
+
+@example
+(%i1) optionset:true;
+assignment: assigning to option optionset
+(%o1)                         true
+(%i2) gamma_expand:true;
+assignment: assigning to option gamma_expand
+(%o2)                         true
+@end example
 
 @opencatbox
 @category{Global flags} @category{Session management} @category{Console interaction}
 @closecatbox
-
 @end defvr
 
-@deffn {Function} playback ()
+@c -----------------------------------------------------------------------------
+@need 800
+@anchor{outchar}
+@defvr {Option variable} outchar
+Default value: @code{%o}
+
+@code{outchar} is the prefix of the labels of expressions computed by Maxima.
+Maxima automatically constructs a label for each computed expression by 
+concatenating @code{outchar} and @mrefdot{linenum}
+
+@code{outchar} may be assigned any string or symbol, not necessarily a single 
+character.  Because Maxima internally takes into account only the first char of
+the prefix, the prefixes @mrefcomma{inchar} @code{outchar} and
+@mref{linechar} should have a different first char.  Otherwise some commands
+like @code{kill(inlables)} do not work as expected.
+
+See also @code{labels}.
+
+Example:
+
+@c ===beg===
+@c outchar: "output";
+@c expand((a+b)^3);
+@c ===end===
+@example
+(%i1) outchar: "output";
+(output1)                    output
+(%i2) expand((a+b)^3);
+                     3        2      2      3
+(output2)           b  + 3 a b  + 3 a  b + a
+(%i3)
+@end example
+
+@opencatbox
+@category{Display flags and variables}
+@closecatbox
+@end defvr
+
+@c -----------------------------------------------------------------------------
+@anchor{playback}
+@deffn  {Function} playback ()
 @deffnx {Function} playback (@var{n})
 @deffnx {Function} playback ([@var{m}, @var{n}])
 @deffnx {Function} playback ([@var{m}])
@@ -1014,168 +670,190 @@ that the variable he assigned a value to was truly an option variable.
 @deffnx {Function} playback (slow)
 @deffnx {Function} playback (time)
 @deffnx {Function} playback (grind)
-Displays input, output, and intermediate expressions,
-without recomputing them.
-@code{playback} only displays the expressions bound to labels;
-any other output (such as text printed by @code{print} or @code{describe}, or error messages)
-is not displayed.
-See also @code{labels}.
 
-@code{playback} quotes its arguments.
-The quote-quote operator @code{'@w{}'} defeats quotation.
-@code{playback} always returns @code{done}.
+Displays input, output, and intermediate expressions, without recomputing them.
+@code{playback} only displays the expressions bound to labels; any other output
+(such as text printed by @mref{print} or @mrefcomma{describe} or error messages)
+is not displayed.  See also @mrefdot{labels}
 
-@code{playback ()} (with no arguments) displays all input, output, and intermediate expressions
-generated so far.
-An output expression is displayed even if it was suppressed by the @code{$} terminator
-when it was originally computed.
+@code{playback} quotes its arguments.  The quote-quote operator @code{'@w{}'}
+defeats quotation.  @code{playback} always returns @code{done}.
+
+@code{playback ()} (with no arguments) displays all input, output, and
+intermediate expressions generated so far.  An output expression is displayed
+even if it was suppressed by the @code{$} terminator when it was originally
+computed.
 
 @code{playback (@var{n})} displays the most recent @var{n} expressions.
 Each input, output, and intermediate expression counts as one.
 
-@code{playback ([@var{m}, @var{n}])} displays input, output, and intermediate expressions
-with numbers from @var{m} through @var{n}, inclusive.
+@code{playback ([@var{m}, @var{n}])} displays input, output, and intermediate
+expressions with numbers from @var{m} through @var{n}, inclusive.
 
-@code{playback ([@var{m}])} is equivalent to @code{playback ([@var{m}, @var{m}])};
-this usually prints one pair of input and output expressions.
+@code{playback ([@var{m}])} is equivalent to
+@code{playback ([@var{m}, @var{m}])}; this usually prints one pair of input and
+output expressions.
 
 @code{playback (input)} displays all input expressions generated so far.
 
-@code{playback (slow)} pauses between expressions
-and waits for the user to press @code{enter}.
-This behavior is similar to @code{demo}.
+@code{playback (slow)} pauses between expressions and waits for the user to
+press @code{enter}.  This behavior is similar to @mrefdot{demo}
 @c WHAT DOES THE FOLLOWING MEAN ???
-@code{playback (slow)} is useful in conjunction with @code{save} or @code{stringout}
-when creating a secondary-storage file in order to pick out useful expressions.
+@code{playback (slow)} is useful in conjunction with @code{save} or
+@mref{stringout} when creating a secondary-storage file in order to pick out
+useful expressions.
 
 @code{playback (time)} displays the computation time for each expression.
 @c DON'T BOTHER TO MENTION OBSOLETE OPTIONS !!!
 @c The arguments @code{gctime} and @code{totaltime} have the same effect as @code{time}.
 
-@code{playback (grind)} displays input expressions
-in the same format as the @code{grind} function.
-Output expressions are not affected by the @code{grind} option.
-See @code{grind}.
+@code{playback (grind)} displays input expressions in the same format as the
+@code{grind} function.  Output expressions are not affected by the @code{grind}
+option.  See @mrefdot{grind}
 
-Arguments may be combined, e.g.,
-@code{playback ([5, 10], grind, time, slow)}.
+Arguments may be combined, e.g., @code{playback ([5, 10], grind, time, slow)}.
 @c APPEARS TO BE input INTERSECT (UNION OF ALL OTHER ARGUMENTS). CORRECT ???
 
 @opencatbox
 @category{Display functions} @category{Console interaction}
 @closecatbox
-
 @end deffn
 
-@c NEEDS WORK ESPECIALLY EXAMPLES
-@c WHOLE BUSINESS WITH PROPERTIES IS PRETTY CONFUSING, TRY TO CLEAR IT UP
-@deffn {Function} printprops (@var{a}, @var{i})
-@deffnx {Function} printprops ([@var{a_1}, ..., @var{a_n}], @var{i})
-@deffnx {Function} printprops (all, @var{i})
-Displays the property with the indicator @var{i}
-associated with the atom @var{a}. @var{a} may also be a list of atoms or the atom
-@code{all} in which case all of the atoms with the given property will be
-used.  For example, @code{printprops ([f, g], atvalue)}.  @code{printprops} is for
-properties that cannot otherwise be displayed, i.e. for
-@code{atvalue}, @code{atomgrad}, @code{gradef}, and @code{matchdeclare}.
-
-@opencatbox
-@category{Declarations and inferences} @category{Display functions}
-@closecatbox
-
-@end deffn
-
+@c -----------------------------------------------------------------------------
+@need 800
+@anchor{prompt}
 @defvr {Option variable} prompt
 Default value: @code{_}
 
-@code{prompt} is the prompt symbol of the @code{demo} function,
-@code{playback (slow)} mode, and the Maxima break loop (as invoked by @code{break}).
+@code{prompt} is the prompt symbol of the @mref{demo} function,
+@code{playback (slow)} mode, and the Maxima break loop (as invoked by
+@mref{break}).
 
 @opencatbox
 @category{Global variables} @category{Console interaction}
 @closecatbox
-
 @end defvr
 
+@c -----------------------------------------------------------------------------
+@anchor{quit}
 @deffn {Function} quit ()
-Terminates the Maxima session.
-Note that the function must be invoked as @code{quit();} or @code{quit()$},
-not @code{quit} by itself.
 
-To stop a lengthy computation,
-type @code{control-C}.
-The default action is to return to the Maxima prompt.
-If @code{*debugger-hook*} is @code{nil},
-@code{control-C} opens the Lisp debugger.
-See also @code{debugging}.
+Terminates the Maxima session.  Note that the function must be invoked as
+@code{quit();} or @code{quit()$}, not @code{quit} by itself.
+
+To stop a lengthy computation, type @code{control-C}.  The default action is to
+return to the Maxima prompt.  If @code{*debugger-hook*} is @code{nil},
+@code{control-C} opens the Lisp debugger.  See also @ref{Debugging}.
 
 @opencatbox
 @category{Console interaction}
 @closecatbox
 @end deffn
 
-@deffn {Function} remfunction (@var{f_1}, ..., @var{f_n})
-@deffnx {Function} remfunction (all)
-Unbinds the function definitions of the symbols @var{f_1}, ..., @var{f_n}.
-The arguments may be the names of ordinary functions (created by @code{:=} or @code{define})
-or macro functions (created by @code{::=}).
+@c -----------------------------------------------------------------------------
+@anchor{read}
+@deffn {Function} read (@var{expr_1}, @dots{}, @var{expr_n})
 
-@code{remfunction (all)} unbinds all function definitions.
+Prints @var{expr_1}, @dots{}, @var{expr_n}, then reads one expression from the
+console and returns the evaluated expression.  The expression is terminated with
+a semicolon @code{;} or dollar sign @code{$}.
 
-@code{remfunction} quotes its arguments.
+See also @mref{readonly}
 
-@code{remfunction} returns a list of the symbols for which the function definition was unbound.
-@code{false} is returned in place of any symbol for which there is no function definition.
+Example:
 
-@code{remfunction} does not apply to array functions or subscripted functions.
-@code{remarray} applies to those types of functions.
+@example
+(%i1) foo: 42$ 
+(%i2) foo: read ("foo is", foo, " -- enter new value.")$
+foo is 42  -- enter new value. 
+(a+b)^3;
+(%i3) foo;
+                                     3
+(%o3)                         (b + a)
+@end example
 
 @opencatbox
-@category{Function definition}
+@category{Console interaction}
 @closecatbox
 @end deffn
 
-@deffn {Function} reset ()
-Resets many global variables and options, and some other variables, to their default values.
+@c -----------------------------------------------------------------------------
+@anchor{readonly}
+@deffn {Function} readonly (@var{expr_1}, @dots{}, @var{expr_n})
 
-@code{reset} processes the variables on the Lisp list @code{*variable-initial-values*}.
-The Lisp macro @code{defmvar} puts variables on this list (among other actions).
-Many, but not all, global variables and options are defined by @code{defmvar},
-and some variables defined by @code{defmvar} are not global variables or options.
+Prints @var{expr_1}, @dots{}, @var{expr_n}, then reads one expression from the
+console and returns the expression (without evaluation).  The expression is
+terminated with a @code{;} (semicolon) or @code{$} (dollar sign).
+
+See also @mrefdot{read}
+
+Examples:
+
+@example
+(%i1) aa: 7$
+(%i2) foo: readonly ("Enter an expression:");
+Enter an expression: 
+2^aa;
+                                  aa
+(%o2)                            2
+(%i3) foo: read ("Enter an expression:");
+Enter an expression: 
+2^aa;
+(%o3)                            128
+@end example
+
+@opencatbox
+@category{Console interaction}
+@closecatbox
+@end deffn
+
+@c -----------------------------------------------------------------------------
+@anchor{reset}
+@deffn {Function} reset ()
+
+Resets many global variables and options, and some other variables, to their
+default values.
+
+@code{reset} processes the variables on the Lisp list
+@code{*variable-initial-values*}.  The Lisp macro @code{defmvar} puts variables
+on this list (among other actions).  Many, but not all, global variables and
+options are defined by @code{defmvar}, and some variables defined by
+@code{defmvar} are not global variables or options.
 
 @opencatbox
 @category{Session management}
 @closecatbox
-
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{showtime}
 @defvr {Option variable} showtime
 Default value: @code{false}
 
 When @code{showtime} is @code{true}, the computation time and elapsed time is
 printed with each output expression.
 
-The computation time is always recorded,
-so @code{time} and @code{playback} can display the computation time
-even when @code{showtime} is @code{false}.
+The computation time is always recorded, so @mref{time} and @mref{playback} can
+display the computation time even when @code{showtime} is @code{false}.
 
-See also @code{timer}.
+See also @mrefdot{timer}
 
 @opencatbox
 @category{Display flags and variables} @category{Debugging}
 @closecatbox
-
 @end defvr
 
 @c -----------------------------------------------------------------------------
+@anchor{to_lisp}
 @deffn {Function} to_lisp ()
-Enters the Lisp system under Maxima. @code{(to-maxima)} returns to Maxima.
+
+Enters the Lisp system under Maxima.  @code{(to-maxima)} returns to Maxima.
 
 Example:
 
-Define a function and enter the Lisp system under Maxima. The defintion is 
-inspected on the property list, then the function definition is extracted, 
-factored and stored in the variable $result. The variable can be used in Maxima 
+Define a function and enter the Lisp system under Maxima.  The definition is
+inspected on the property list, then the function definition is extracted,
+factored and stored in the variable $result.  The variable can be used in Maxima
 after returning to Maxima.
 
 @example
@@ -1202,22 +880,24 @@ Returning to Maxima
 @end deffn
 
 @c -----------------------------------------------------------------------------
+@anchor{values}
 @defvr {System variable} values
 Initial value: @code{[]}
 
 @code{values} is a list of all bound user variables (not Maxima options or
-switches). The list comprises symbols bound by @code{:}, or @code{::}.
+switches).  The list comprises symbols bound by @mrefcomma{:} or @mrefdot{::}
 
 If the value of a variable is removed with the commands @code{kill}, 
-@code{remove}, or @code{remvalue} the variable is deleted from @code{values}.
+@mrefcomma{remove} or @mref{remvalue} the variable is deleted from
+@code{values}.
 
-See @code{functions} for a list of user defined functions.
+See @mref{functions} for a list of user defined functions.
 
 Examples:
 
 First, @code{values} shows the symbols @code{a}, @code{b}, and @code{c}, but 
 not @code{d}, it is not bound to a value, and not the user function @code{f}.
-The values are removed from the variables. @code{values} is the empty list.
+The values are removed from the variables.  @code{values} is the empty list.
 
 @c ===beg===
 @c [a:99, b:: a-90, c:a-b, d, f(x):=x^2];
@@ -1227,18 +907,925 @@ The values are removed from the variables. @code{values} is the empty list.
 @c ===end===
 @example
 (%i1) [a:99, b::a-90, c:a-b, d, f(x):= x^2];
-                                                  2
-(%o1)                     [99, 9, 90, d, f(x) := x ]
+                                           2
+(%o1)              [99, 9, 90, d, f(x) := x ]
 (%i2) values;
-(%o2)                              [a, b, c]
+(%o2)                       [a, b, c]
 (%i3) [kill(a), remove(b,value), remvalue(c)];
-(%o3)                          [done, done, [c]]
+(%o3)                   [done, done, [c]]
 (%i4) values;
-(%o4)                                 []
+(%o4)                          []
 @end example
 
 @opencatbox
 @category{Evaluation} @category{Global variables}
+@closecatbox
+@end defvr
+
+@c -----------------------------------------------------------------------------
+@node Functions and Variables for Display, , Functions and Variables for Command Line, Command Line
+@section Functions and Variables for Display
+@c -----------------------------------------------------------------------------
+
+@c -----------------------------------------------------------------------------
+@anchor{%edispflag}
+@defvr {Option variable} %edispflag
+Default value: @code{false}
+
+When @code{%edispflag} is @code{true}, Maxima displays @code{%e} to a negative
+exponent as a quotient.  For example, @code{%e^-x} is displayed as
+@code{1/%e^x}.  See also @mrefdot{exptdispflag}
+
+Example:
+
+@c ===beg===
+@c %e^-10;
+@c %edispflag:true$
+@c %e^-10;
+@c ===end===
+@example
+(%i1) %e^-10;
+                               - 10
+(%o1)                        %e
+(%i2) %edispflag:true$
+(%i3) %e^-10;
+                               1
+(%o3)                         ----
+                                10
+                              %e
+@end example
+
+@opencatbox
+@category{Exponential and logarithm functions} @category{Display flags and variables}
+@closecatbox
+@end defvr
+
+@c -----------------------------------------------------------------------------
+@anchor{absboxchar}
+@defvr {Option variable} absboxchar
+Default value: @code{!}
+
+@code{absboxchar} is the character used to draw absolute value
+signs around expressions which are more than one line tall.
+
+Example:
+
+@example
+(%i1) abs((x^3+1));
+                            ! 3    !
+(%o1)                       !x  + 1!
+@end example
+
+@opencatbox
+@category{Display flags and variables}
+@closecatbox
+@end defvr
+
+@c AFTER REVIEWING src/displa.lisp, IT LOOKS LIKE THIS VARIABLE HAS NO EFFECT
+@c CUT IT ON THE NEXT PASS
+@c @defvar cursordisp
+@c Default value: @code{true}
+@c 
+@c When @code{cursordisp} is @code{true}, expressions are drawn by
+@c the displayer in logical sequence.  This only works with a console
+@c which can do cursor movement.  If @code{false}, expressions are
+@c printed line by line.
+@c 
+@c @code{cursordisp} is always @code{false} when a @code{writefile} is in
+@c effect.
+@c 
+@c @end defvar
+
+@c -----------------------------------------------------------------------------
+@anchor{disp}
+@deffn {Function} disp (@var{expr_1}, @var{expr_2}, @dots{})
+
+is like @mref{display} but only the value of the arguments are displayed rather
+than equations.  This is useful for complicated arguments which don't have names 
+or where only the value of the argument is of interest and not the name.
+
+See also @mref{ldisp} and @mrefdot{print}
+
+Example:
+
+@c ===beg===
+@c b[1,2]:x-x^2$
+@c x:123$
+@c disp(x, b[1,2], sin(1.0));
+@c ===end===
+@example
+(%i1) b[1,2]:x-x^2$
+(%i2) x:123$
+(%i3) disp(x, b[1,2], sin(1.0));
+                               123
+
+                                  2
+                             x - x
+
+                        .8414709848078965
+
+(%o3)                         done
+@end example
+
+@opencatbox
+@category{Display functions}
+@closecatbox
+@end deffn
+
+@c -----------------------------------------------------------------------------
+@anchor{display}
+@deffn {Function} display (@var{expr_1}, @var{expr_2}, @dots{})
+
+Displays equations whose left side is @var{expr_i} unevaluated, and whose right
+side is the value of the expression centered on the line.  This function is 
+useful in blocks and @mref{for} statements in order to have intermediate results
+displayed.  The arguments to @code{display} are usually atoms, subscripted 
+variables, or function calls.
+
+See also @mrefcomma{ldisplay} @mrefcomma{disp} and @mrefdot{ldisp}
+
+Example:
+
+@c ===beg===
+@c b[1,2]:x-x^2$
+@c x:123$
+@c display(x, b[1,2], sin(1.0));
+@c ===end===
+@example
+(%i1) b[1,2]:x-x^2$
+(%i2) x:123$
+(%i3) display(x, b[1,2], sin(1.0));
+                             x = 123
+
+                                      2
+                         b     = x - x
+                          1, 2
+
+                  sin(1.0) = .8414709848078965
+
+(%o3)                         done
+@end example
+
+@opencatbox
+@category{Display functions}
+@closecatbox
+@end deffn
+
+@c -----------------------------------------------------------------------------
+@anchor{display2d}
+@defvr {Option variable} display2d
+Default value: @code{true}
+
+When @code{display2d} is @code{false}, the console display is a string 
+(1-dimensional) form rather than a display (2-dimensional) form.
+
+See also @mref{leftjust} to switch between a left justified and a centered
+display of equations.
+
+Example:
+
+@c ===beg===
+@c x/(x^2+1);
+@c display2d:false$
+@c x/(x^2+1);
+@c ===end===
+@example
+(%i1) x/(x^2+1);
+                               x
+(%o1)                        ------
+                              2
+                             x  + 1
+(%i2) display2d:false$
+(%i3) x/(x^2+1);
+(%o3) x/(x^2+1)
+@end example
+
+@opencatbox
+@category{Display flags and variables}
+@closecatbox
+@end defvr
+
+@c -----------------------------------------------------------------------------
+@anchor{display_format_internal}
+@defvr {Option variable} display_format_internal
+Default value: @code{false}
+
+When @code{display_format_internal} is @code{true}, expressions are displayed
+without being transformed in ways that hide the internal mathematical
+representation.  The display then corresponds to what @mref{inpart} returns
+rather than @mrefdot{part}
+
+Examples:
+
+@example
+User     part       inpart
+a-b;      a - b     a + (- 1) b
+
+           a            - 1
+a/b;       -         a b
+           b
+                       1/2
+sqrt(x);   sqrt(x)    x
+
+          4 X        4
+X*4/3;    ---        - X
+           3         3
+@end example
+
+@opencatbox
+@category{Display flags and variables}
+@closecatbox
+@end defvr
+
+@c IS THIS FUNCTION STILL USEFUL ???
+@c REPHRASE, NEEDS EXAMPLES
+
+@c -----------------------------------------------------------------------------
+@anchor{dispterms}
+@deffn {Function} dispterms (@var{expr})
+
+Displays @var{expr} in parts one below the other.  That is, first the operator
+of @var{expr} is displayed, then each term in a sum, or factor in a product, or
+part of a more general expression is displayed separately.  This is useful if
+@var{expr} is too large to be otherwise displayed.  For example if @code{P1},
+@code{P2}, @dots{}  are very large expressions then the display program may run
+out of storage space in trying to display @code{P1 + P2 + ...}  all at once.
+However, @code{dispterms (P1 + P2 + ...)} displays @code{P1}, then below it
+@code{P2}, etc.  When not using @code{dispterms}, if an exponential expression
+is too wide to be displayed as @code{A^B} it appears as @code{expt (A, B)} (or
+as @code{ncexpt (A, B)} in the case of @code{A^^B}).
+
+Example:
+
+@example
+(%i1) dispterms(2*a*sin(x)+%e^x);
+
++
+
+2 a sin(x)
+
+  x
+%e
+
+(%o1)                         done
+@end example
+
+@opencatbox
+@category{Display functions}
+@closecatbox
+@end deffn
+
+@c -----------------------------------------------------------------------------
+@anchor{expt}
+@anchor{ncexpt}
+@deffn  {Special symbol} expt (@var{a}, @var{b})
+@deffnx {Special symbol} ncexpt (@var{a}, @var{b})
+
+If an exponential expression is too wide to be displayed as
+@code{@var{a}^@var{b}} it appears as @code{expt (@var{a}, @var{b})} (or as
+@code{ncexpt (@var{a}, @var{b})} in the case of @code{@var{a}^^@var{b}}).
+
+@c THIS SEEMS LIKE A BUG TO ME.  expt, ncexpt SHOULD BE RECOGNIZED SINCE MAXIMA
+@c ITSELF PRINTS THEM SOMETIMES.  THESE SHOULD JUST SIMPLIFY TO ^ AND ^^,
+@c RESPECTIVELY.
+@code{expt} and @code{ncexpt} are not recognized in input.
+@end deffn
+
+@c -----------------------------------------------------------------------------
+@anchor{exptdispflag}
+@defvr {Option variable} exptdispflag
+Default value: @code{true}
+
+When @code{exptdispflag} is @code{true}, Maxima displays expressions
+with negative exponents using quotients.  See also @mrefdot{%edispflag}
+
+Example:
+
+@example
+(%i1) exptdispflag:true;
+(%o1)                         true
+(%i2) 10^-x;
+                                1
+(%o2)                          ---
+                                 x
+                               10
+(%i3) exptdispflag:false;
+(%o3)                         false
+(%i4) 10^-x;
+                                - x
+(%o4)                         10
+@end example
+
+@opencatbox
+@category{Expressions} @category{Display flags and variables}
+@closecatbox
+@end defvr
+
+@c -----------------------------------------------------------------------------
+@anchor{grind}
+@deffn  {Function} grind (@var{expr})
+@deffnx {Option variable} grind
+
+The function @code{grind} prints @var{expr} to the console in a form suitable
+for input to Maxima.  @code{grind} always returns @code{done}.
+
+When @var{expr} is the name of a function or macro, @code{grind} prints the
+function or macro definition instead of just the name.
+
+See also @mrefcomma{string} which returns a string instead of printing its
+output.  @code{grind} attempts to print the expression in a manner which makes
+it slightly easier to read than the output of @code{string}.
+
+When the variable @code{grind} is @code{true}, the output of @code{string} and
+@mref{stringout} has the same format as that of @code{grind}; otherwise no
+attempt is made to specially format the output of those functions.  The default
+value of the variable @code{grind} is @code{false}.
+
+@code{grind} can also be specified as an argument of @mrefdot{playback}  When
+@code{grind} is present, @code{playback} prints input expressions in the same
+format as the @code{grind} function.  Otherwise, no attempt is made to specially
+format input expressions.
+
+@code{grind} evaluates its argument.
+
+Examples:
+
+@c ===beg===
+@c aa + 1729;
+@c grind (%);
+@c [aa, 1729, aa + 1729];
+@c grind (%);
+@c matrix ([aa, 17], [29, bb]);
+@c grind (%);
+@c set (aa, 17, 29, bb);
+@c grind (%);
+@c exp (aa / (bb + 17)^29);
+@c grind (%);
+@c expr: expand ((aa + bb)^10);
+@c grind (expr);
+@c string (expr);
+@c cholesky (A):= block ([n : length (A), L : copymatrix (A),
+@c   p : makelist (0, i, 1, length (A))], 
+@c   for i thru n do for j : i thru n do
+@c   (x : L[i, j], x : x - sum (L[j, k] * L[i, k], k, 1, i - 1), 
+@c   if i = j then @c   p[i] : 1 / sqrt(x) else L[j, i] : x * p[i]), 
+@c   for i thru n do L[i, i] : 1 / p[i],
+@c   for i thru n do for j : i + 1 thru n do L[i, j] : 0, L)$
+@c grind (cholesky);
+@c string (fundef (cholesky));
+@c ===end===
+@example
+(%i1) aa + 1729;
+(%o1)                       aa + 1729
+(%i2) grind (%);
+aa+1729$
+(%o2)                         done
+(%i3) [aa, 1729, aa + 1729];
+(%o3)                 [aa, 1729, aa + 1729]
+(%i4) grind (%);
+[aa,1729,aa+1729]$
+(%o4)                         done
+(%i5) matrix ([aa, 17], [29, bb]);
+                           [ aa  17 ]
+(%o5)                      [        ]
+                           [ 29  bb ]
+(%i6) grind (%);
+matrix([aa,17],[29,bb])$
+(%o6)                         done
+(%i7) set (aa, 17, 29, bb);
+(%o7)                   @{17, 29, aa, bb@}
+(%i8) grind (%);
+@{17,29,aa,bb@}$
+(%o8)                         done
+(%i9) exp (aa / (bb + 17)^29);
+                                aa
+                            -----------
+                                     29
+                            (bb + 17)
+(%o9)                     %e
+(%i10) grind (%);
+%e^(aa/(bb+17)^29)$
+(%o10)                        done
+(%i11) expr: expand ((aa + bb)^10);
+         10           9        2   8         3   7         4   6
+(%o11) bb   + 10 aa bb  + 45 aa  bb  + 120 aa  bb  + 210 aa  bb
+         5   5         6   4         7   3        8   2
+ + 252 aa  bb  + 210 aa  bb  + 120 aa  bb  + 45 aa  bb
+        9        10
+ + 10 aa  bb + aa
+(%i12) grind (expr);
+@group
+bb^10+10*aa*bb^9+45*aa^2*bb^8+120*aa^3*bb^7+210*aa^4*bb^6
+     +252*aa^5*bb^5+210*aa^6*bb^4+120*aa^7*bb^3+45*aa^8*bb^2
+     +10*aa^9*bb+aa^10$
+@end group
+(%o12)                        done
+(%i13) string (expr);
+(%o13) bb^10+10*aa*bb^9+45*aa^2*bb^8+120*aa^3*bb^7+210*aa^4*bb^6\
++252*aa^5*bb^5+210*aa^6*bb^4+120*aa^7*bb^3+45*aa^8*bb^2+10*aa^9*\
+bb+aa^10
+(%i14) cholesky (A):= block ([n : length (A), L : copymatrix (A),
+  p : makelist (0, i, 1, length (A))], for i thru n do
+  for j : i thru n do
+  (x : L[i, j], x : x - sum (L[j, k] * L[i, k], k, 1, i - 1),
+  if i = j then p[i] : 1 / sqrt(x) else L[j, i] : x * p[i]),
+  for i thru n do L[i, i] : 1 / p[i],
+  for i thru n do for j : i + 1 thru n do L[i, j] : 0, L)$
+(%i15) grind (cholesky);
+cholesky(A):=block(
+         [n:length(A),L:copymatrix(A),
+          p:makelist(0,i,1,length(A))],
+         for i thru n do
+             (for j from i thru n do
+                  (x:L[i,j],x:x-sum(L[j,k]*L[i,k],k,1,i-1),
+                   if i = j then p[i]:1/sqrt(x)
+                       else L[j,i]:x*p[i])),
+         for i thru n do L[i,i]:1/p[i],
+         for i thru n do (for j from i+1 thru n do L[i,j]:0),L)$
+(%o15)                        done
+(%i16) string (fundef (cholesky));
+(%o16) cholesky(A):=block([n:length(A),L:copymatrix(A),p:makelis\
+t(0,i,1,length(A))],for i thru n do (for j from i thru n do (x:L\
+[i,j],x:x-sum(L[j,k]*L[i,k],k,1,i-1),if i = j then p[i]:1/sqrt(x\
+) else L[j,i]:x*p[i])),for i thru n do L[i,i]:1/p[i],for i thru \
+n do (for j from i+1 thru n do L[i,j]:0),L)
+@end example
+
+@opencatbox
+@category{Display functions} @category{Display flags and variables}
+@closecatbox
+@end deffn
+
+@c -----------------------------------------------------------------------------
+@anchor{ibase}
+@defvr {Option variable} ibase
+Default value: @code{10}
+
+@code{ibase} is the base for integers read by Maxima.
+
+@code{ibase} may be assigned any integer between 2 and 36 (decimal), inclusive.
+When @code{ibase} is greater than 10,
+the numerals comprise the decimal numerals 0 through 9
+plus letters of the alphabet A, B, C, @dots{},
+as needed to make @code{ibase} digits in all.
+Letters are interpreted as digits only if the first digit is 0 through 9.
+Uppercase and lowercase letters are not distinguished.
+The numerals for base 36, the largest acceptable base,
+comprise 0 through 9 and A through Z.
+
+Whatever the value of @code{ibase},
+when an integer is terminated by a decimal point,
+it is interpreted in base 10.
+
+See also @mrefdot{obase}
+
+Examples:
+
+@code{ibase} less than 10.
+
+@c ===beg===
+@c ibase : 2 $
+@c obase;
+@c 1111111111111111;
+@c ===end===
+@example
+(%i1) ibase : 2 $
+(%i2) obase;
+(%o2)                          10
+(%i3) 1111111111111111;
+(%o3)                         65535
+@end example
+
+@code{ibase} greater than 10.
+Letters are interpreted as digits only if the first digit is 0 through 9.
+
+@c ===beg===
+@c ibase : 16 $
+@c obase;
+@c 1000;
+@c abcd;
+@c symbolp (abcd);
+@c 0abcd;
+@c symbolp (0abcd);
+@c ===end===
+@example
+(%i1) ibase : 16 $
+(%i2) obase;
+(%o2)                          10
+(%i3) 1000;
+(%o3)                         4096
+(%i4) abcd;
+(%o4)                         abcd
+(%i5) symbolp (abcd);
+(%o5)                         true
+(%i6) 0abcd;
+(%o6)                         43981
+(%i7) symbolp (0abcd);
+(%o7)                         false
+@end example
+
+When an integer is terminated by a decimal point,
+it is interpreted in base 10.
+
+@c ===beg===
+@c ibase : 36 $
+@c obase;
+@c 1234;
+@c 1234.;
+@c ===end===
+@example
+(%i1) ibase : 36 $
+(%i2) obase;
+(%o2)                          10
+(%i3) 1234;
+(%o3)                         49360
+(%i4) 1234.;
+(%o4)                         1234
+@end example
+
+@opencatbox
+@category{Console interaction}
+@closecatbox
+@end defvr
+
+@c -----------------------------------------------------------------------------
+@anchor{ldisp}
+@deffn {Function} ldisp (@var{expr_1}, @dots{}, @var{expr_n})
+
+Displays expressions @var{expr_1}, @dots{}, @var{expr_n} to the console as
+printed output.  @code{ldisp} assigns an intermediate expression label to each
+argument and returns the list of labels.
+
+See also @mrefcomma{disp} @mrefcomma{display} and @mrefdot{ldisplay}
+
+Examples:
+
+@example
+(%i1) e: (a+b)^3;
+                                   3
+(%o1)                       (b + a)
+(%i2) f: expand (e);
+                     3        2      2      3
+(%o2)               b  + 3 a b  + 3 a  b + a
+(%i3) ldisp (e, f);
+                                   3
+(%t3)                       (b + a)
+
+                     3        2      2      3
+(%t4)               b  + 3 a b  + 3 a  b + a
+
+(%o4)                      [%t3, %t4]
+(%i4) %t3;
+                                   3
+(%o4)                       (b + a)
+(%i5) %t4;
+                     3        2      2      3
+(%o5)               b  + 3 a b  + 3 a  b + a
+@end example
+
+@opencatbox
+@category{Display functions}
+@closecatbox
+@end deffn
+
+@c -----------------------------------------------------------------------------
+@anchor{ldisplay}
+@deffn {Function} ldisplay (@var{expr_1}, @dots{}, @var{expr_n})
+
+Displays expressions @var{expr_1}, @dots{}, @var{expr_n} to the console as
+printed output.  Each expression is printed as an equation of the form
+@code{lhs = rhs} in which @code{lhs} is one of the arguments of @code{ldisplay}
+and @code{rhs} is its value.  Typically each argument is a variable.
+@mref{ldisp} assigns an intermediate expression label to each equation and
+returns the list of labels.
+
+See also @mrefcomma{display} @mrefcomma{disp} and @mrefdot{ldisp}
+
+Examples:
+
+@example
+(%i1) e: (a+b)^3;
+                                   3
+(%o1)                       (b + a)
+(%i2) f: expand (e);
+                     3        2      2      3
+(%o2)               b  + 3 a b  + 3 a  b + a
+(%i3) ldisplay (e, f);
+                                     3
+(%t3)                     e = (b + a)
+
+                       3        2      2      3
+(%t4)             f = b  + 3 a b  + 3 a  b + a
+
+(%o4)                      [%t3, %t4]
+(%i4) %t3;
+                                     3
+(%o4)                     e = (b + a)
+(%i5) %t4;
+                       3        2      2      3
+(%o5)             f = b  + 3 a b  + 3 a  b + a
+@end example
+
+@opencatbox
+@category{Display functions}
+@closecatbox
+@end deffn
+
+@c -----------------------------------------------------------------------------
+@anchor{leftjust}
+@defvr {Option variable} leftjust
+Default value: @code{false}
+
+When @code{leftjust} is @code{true}, equations in 2D-display are drawn left
+justified rather than centered.
+
+See also @mref{display2d} to switch between 1D- and 2D-display.
+
+Example:
+
+@example
+(%i1) expand((x+1)^3);
+                        3      2
+(%o1)                  x  + 3 x  + 3 x + 1
+(%i2) leftjust:true$
+(%i3) expand((x+1)^3);
+       3      2
+(%o3) x  + 3 x  + 3 x + 1
+@end example
+
+@opencatbox
+@category{Display flags and variables}
+@closecatbox
+@end defvr
+
+@c -----------------------------------------------------------------------------
+@anchor{linel}
+@defvr {Option variable} linel
+Default value: @code{79}
+
+@code{linel} is the assumed width (in characters) of the console display for the
+purpose of displaying expressions.  @code{linel} may be assigned any value by
+the user, although very small or very large values may be impractical.  Text
+printed by built-in Maxima functions, such as error messages and the output of
+@mrefcomma{describe} is not affected by @code{linel}.
+
+@opencatbox
+@category{Display flags and variables}
+@closecatbox
+@end defvr
+
+@c -----------------------------------------------------------------------------
+@need 800
+@anchor{lispdisp}
+@defvr {Option variable} lispdisp
+Default value: @code{false}
+
+When @code{lispdisp} is @code{true}, Lisp symbols are displayed with a leading
+question mark @code{?}.  Otherwise, Lisp symbols are displayed with no leading
+mark.
+
+Examples:
+
+@c ===beg===
+@c lispdisp: false$
+@c ?foo + ?bar;
+@c lispdisp: true$
+@c ?foo + ?bar;
+@c ===end===
+@example
+(%i1) lispdisp: false$
+(%i2) ?foo + ?bar;
+(%o2)                       foo + bar
+(%i3) lispdisp: true$
+(%i4) ?foo + ?bar;
+(%o4)                      ?foo + ?bar
+@end example
+
+@opencatbox
+@category{Display flags and variables}
+@closecatbox
+@end defvr
+
+@c NEEDS CLARIFICATION, EXAMPLES
+
+@c -----------------------------------------------------------------------------
+@anchor{negsumdispflag}
+@defvr {Option variable} negsumdispflag
+Default value: @code{true}
+
+When @code{negsumdispflag} is @code{true}, @code{x - y} displays as @code{x - y}
+instead of as @code{- y + x}.  Setting it to @code{false} causes the special
+check in display for the difference of two expressions to not be done.  One
+application is that thus @code{a + %i*b} and @code{a - %i*b} may both be
+displayed the same way.
+
+@opencatbox
+@category{Display flags and variables}
+@closecatbox
+@end defvr
+
+@c -----------------------------------------------------------------------------
+@anchor{obase}
+@defvr {Option variable} obase
+Default value: @code{10}
+
+@code{obase} is the base for integers displayed by Maxima.
+
+@code{obase} may be assigned any integer between 2 and 36 (decimal), inclusive.
+When @code{obase} is greater than 10,
+the numerals comprise the decimal numerals 0 through 9
+plus capital letters of the alphabet A, B, C, @dots{}, as needed.
+A leading 0 digit is displayed if the leading digit is otherwise a letter.
+The numerals for base 36, the largest acceptable base,
+comprise 0 through 9, and A through Z.
+
+See also @mrefdot{ibase}
+
+Examples:
+
+@c ===beg===
+@c obase : 2;
+@c 2^8 - 1;
+@c obase : 8;
+@c 8^8 - 1;
+@c obase : 16;
+@c 16^8 - 1;
+@c obase : 36;
+@c 36^8 - 1;
+@c ===end===
+@example
+(%i1) obase : 2;
+(%o1)                          10
+(%i2) 2^8 - 1;
+(%o10)                      11111111
+(%i3) obase : 8;
+(%o3)                          10
+(%i4) 8^8 - 1;
+(%o4)                       77777777
+(%i5) obase : 16;
+(%o5)                          10
+(%i6) 16^8 - 1;
+(%o6)                       0FFFFFFFF
+(%i7) obase : 36;
+(%o7)                          10
+(%i8) 36^8 - 1;
+(%o8)                       0ZZZZZZZZ
+@end example
+
+@opencatbox
+@category{Display flags and variables} @category{Console interaction}
+@closecatbox
+@end defvr
+
+@c -----------------------------------------------------------------------------
+@anchor{pfeformat}
+@defvr {Option variable} pfeformat
+Default value: @code{false}
+
+When @code{pfeformat} is @code{true}, a ratio of integers is displayed with the
+solidus (forward slash) character, and an integer denominator @code{n} is
+displayed as a leading multiplicative term @code{1/n}.
+
+Examples:
+
+@example
+(%i1) pfeformat: false$
+(%i2) 2^16/7^3;
+                              65536
+(%o2)                         -----
+                               343
+(%i3) (a+b)/8;
+                              b + a
+(%o3)                         -----
+                                8
+(%i4) pfeformat: true$ 
+(%i5) 2^16/7^3;
+(%o5)                       65536/343
+(%i6) (a+b)/8;
+(%o6)                      1/8 (b + a)
+@end example
+
+@opencatbox
+@category{Display flags and variables}
+@closecatbox
+@end defvr
+
+@c -----------------------------------------------------------------------------
+@anchor{powerdisp}
+@defvr {Option variable} powerdisp
+Default value: @code{false}
+
+When @code{powerdisp} is @code{true},
+a sum is displayed with its terms in order of increasing power.
+Thus a polynomial is displayed as a truncated power series,
+with the constant term first and the highest power last.
+
+By default, terms of a sum are displayed in order of decreasing power.
+
+Example:
+
+@example
+(%i1) powerdisp:true;
+(%o1)                         true
+(%i2) x^2+x^3+x^4;
+                           2    3    4
+(%o2)                     x  + x  + x
+(%i3) powerdisp:false;
+(%o3)                         false
+(%i4) x^2+x^3+x^4;
+                           4    3    2
+(%o4)                     x  + x  + x
+@end example
+
+@opencatbox
+@category{Display flags and variables}
+@closecatbox
+@end defvr
+
+@c -----------------------------------------------------------------------------
+@anchor{print}
+@deffn {Function} print (@var{expr_1}, @dots{}, @var{expr_n})
+
+Evaluates and displays @var{expr_1}, @dots{}, @var{expr_n} one after another,
+from left to right, starting at the left edge of the console display.
+
+The value returned by @code{print} is the value of its last argument.
+@code{print} does not generate intermediate expression labels.
+
+See also @mrefcomma{display} @mrefcomma{disp} @mrefcomma{ldisplay} and
+@mrefdot{ldisp}  Those functions display one expression per line, while
+@code{print} attempts to display two or more expressions per line.
+
+To display the contents of a file, see @mrefdot{printfile}
+
+Examples:
+
+@example
+(%i1) r: print ("(a+b)^3 is", expand ((a+b)^3), "log (a^10/b) is",
+      radcan (log (a^10/b)))$
+            3        2      2      3
+(a+b)^3 is b  + 3 a b  + 3 a  b + a  log (a^10/b) is 
+
+                                              10 log(a) - log(b) 
+(%i2) r;
+(%o2)                  10 log(a) - log(b)
+(%i3) disp ("(a+b)^3 is", expand ((a+b)^3), "log (a^10/b) is",
+      radcan (log (a^10/b)))$
+                           (a+b)^3 is
+
+                     3        2      2      3
+                    b  + 3 a b  + 3 a  b + a
+
+                         log (a^10/b) is
+
+                       10 log(a) - log(b)
+@end example
+
+@opencatbox
+@category{Display functions}
+@closecatbox
+@end deffn
+
+@c -----------------------------------------------------------------------------
+@anchor{sqrtdispflag}
+@defvr {Option variable} sqrtdispflag
+Default value: @code{true}
+
+When @code{sqrtdispflag} is @code{false}, causes @code{sqrt} to display with
+exponent 1/2.
+@c AND OTHERWISE ... ??
+
+@opencatbox
+@category{Mathematical functions} @category{Display flags and variables}
+@closecatbox
+@end defvr
+
+@c -----------------------------------------------------------------------------
+@anchor{stardisp}
+@defvr {Option variable} stardisp
+Default value: @code{false}
+
+When @code{stardisp} is @code{true}, multiplication is
+displayed with an asterisk @code{*} between operands.
+
+@opencatbox
+@category{Display flags and variables}
+@closecatbox
+@end defvr
+
+@c -----------------------------------------------------------------------------
+@anchor{ttyoff}
+@defvr {Option variable} ttyoff
+Default value: @code{false}
+
+When @code{ttyoff} is @code{true}, output expressions are not displayed.
+Output expressions are still computed and assigned labels.  See @mrefdot{labels}
+
+Text printed by built-in Maxima functions, such as error messages and the output
+of @mrefcomma{describe} is not affected by @code{ttyoff}.
+
+@opencatbox
+@category{Display flags and variables}
 @closecatbox
 @end defvr
 

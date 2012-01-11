@@ -2,10 +2,10 @@
 @c File        : include-maxima.de.texi
 @c License     : GNU General Public License (GPL)
 @c Language    : German
-@c Original    : include-maxima.texi.in 27.03.2011
+@c Original    : include-maxima.texi.in 25.09.2011
 @c Translation : Dr. Dieter Kaiser
 @c Date        : 15.10.2010
-@c Revision    : 20.04.2011
+@c Revision    : 06.12.2011
 @c 
 @c This file contains the contents, a detailed node listing and inclucdes
 @c all files for the documentation.
@@ -26,6 +26,7 @@
 
 @c %**start of header
 @synindex vr fn
+@synindex cp fn
 @settitle Maxima Manual
 @c %**end of header
 @setchapternewpage odd
@@ -47,12 +48,14 @@ END-INFO-DIR-ENTRY
 @end macro
 @end ifinfo
 
+@paragraphindent 0
+
 @include category-macros.de.texi
 
 @titlepage
 @sp 10
 @center @titlefont{Maxima Manual}
-@center Version 5.23
+@center Version 5.26
 @sp 2
 @center Deutsche @"Ubersetzung
 @page
@@ -128,7 +131,7 @@ Dr. Dieter Kaiser, 14.02.2011
 * Programmfehler::              Programmfehler finden und berichten.
 * Hilfe::                       Hilfe in einer Maxima-Sitzung erhalten.
 * Kommandozeile::               Eingaben und Ausgaben der Konsole.
-* Datentypen und -strukturen::  Ganze, rationale und Gleitkommazahlen,
+* Datentypen und Strukturen::   Ganze, rationale und Gleitkommazahlen,
                                 Konstante, Zeichenketten, Listen und Arrays.
 * Ausdr@"ucke::                 Ausdr@"ucke in Maxima.
 * Operatoren::                  Operatoren in Maxima.
@@ -143,20 +146,18 @@ Dr. Dieter Kaiser, 14.02.2011
 
 Spezifische Gebiete der Mathematik
 
-* Mengen::                      (Englisch) Methoden f@"ur Mengen.
+* Mengen::                      Methoden f@"ur Mengen.
 * Summen Produkte und Reihen::  Summen, Produkte, Taylorreihen und
                                 Poissonreihen.
 * Analysis::                    Grenzwerte, Differentiation, Integration,
                                 Differentialgleichungen.
-* Polynome::                    (Englisch) Standard forms for polynomials, and
-                                functions operating on them.
+* Polynome::                    Polynome und rationale Funktionen.
 * Gleichungen::                 L@"osen von Gleichungen.
 * Lineare Algebra::             Matrizen und Vektoren.
 * Tensoren::                    (Englisch) Methoden der Tensorrechnung.
 * Zahlentheorie::               Funktionen der Zahlentheorie.
-* Spezielle Funktionen::        (Englisch) Spezielle Mathematische Funktionen.
-* Fouriertransformationen::     (Englisch) Fouriertransformationen und
-                                Fourierreihen.
+* Spezielle Funktionen::        Spezielle Mathematische Funktionen.
+* Fourier-Transformationen::    Fourier-Transformationen und Fourierreihen.
 @sp 1
 
 Fortgeschrittene M@"oglichkeiten und Programmierung
@@ -166,7 +167,7 @@ Fortgeschrittene M@"oglichkeiten und Programmierung
 * Funktionsdefinitionen::       Definition von Maxima-Funktionen.
 * Laufzeitumgebung::            Anpassung der Maxima-Umgebung.
 * Programmierung::              Maxima-Programme schreiben.
-* @"Ubersetzer::                Maxima-Programme @"ubersetzen und komplieren.
+* @"Ubersetzer::                Maxima-Programme @"ubersetzen und kompilieren.
 * Fehlersuche::                 Fehlersuche in Programmen.
 * Verschiedenes::               Sonstige Funktionen und Variablen.
 @sp 1
@@ -177,6 +178,7 @@ Zus@"atzliche Pakete (Englisch)
 * affine::                      
 * asympa::                      Asymptotic analysis package
 * augmented_lagrangian::        augmented_lagrangian package.
+* bernstein::                   Bernstein polynomials.
 * bode::                        Bode gain and phase plots.
 * cobyla::                      Nonlinear optimization with inequality 
                                 constraints.
@@ -204,7 +206,7 @@ Zus@"atzliche Pakete (Englisch)
 * lsquares::                    Least squares.
 * makeOrders::                  Polynomial utility.
 * minpack::                     MINPACK functions for minimization and roots
-* mnewton::                     Newton's method.
+* mnewton::                     Newton-Verfahren
 * numericalio::                 Reading and writing files.
 * opsubst::                     Substitutions utility.
 * orthopoly::                   Orthogonal polynomials.
@@ -217,6 +219,7 @@ Zus@"atzliche Pakete (Englisch)
 * stirling::                    Stirling formula.
 * stringproc::                  String processing.
 * symmetries::                  
+* to_poly_solve::               to_poly_solve package.
 * unit::                        Units and dimensions package.
 * zeilberger::                  Functions for hypergeometric summation.
 @sp 1
@@ -248,7 +251,7 @@ Kommandozeile
 * Funktionen und Variablen der Eingabe::
 * Funktionen und Variablen der Ausgabe::
 
-Datentypen und -strukturen
+Datentypen und Strukturen
 * Zahlen::
 * Zeichenketten::
 * Funktionen und Variablen f@"ur Konstante::
@@ -310,12 +313,12 @@ Eingabe und Ausgabe
 * Kommentare::
 * Dateien::
 * Funktionen und Variablen f@"ur die Eingabe und Ausgabe::
-* Funktionen und Variablen f@"ur die Tex-Ausgabe::
+* Funktionen und Variablen f@"ur die TeX-Ausgabe::
 * Funktionen und Variablen f@"ur die Fortran-Ausgabe::
 
 Mengen
-* Introduction to Sets::
-* Functions and Variables for Sets::
+* Einf@"uhrung in Mengen::
+* Funktionen und Variablen f@"ur Mengen::
 
 Summen, Produkte und Reihen
 * Summen und Produkte::
@@ -331,60 +334,57 @@ Analysis
 * Differentialgleichungen::
 
 Polynome
-* Introduction to Polynomials::  
-* Functions and Variables for Polynomials::  
+* Einf@"uhrung in Polynome::
+* Funktionen und Variablen f@"ur Polynome::
 
 Gleichungen
 * Funktionen und Variablen f@"ur Gleichungen::
 
 Lineare Algebra
 * Einf@"uhrung in die lineare Algebra::
-* Nichtkommutative Multiplikation::
+* Nicht-kommutative Multiplikation::
 * Vektoren::
 * Eigenwerte::
 * Funktionen und Variablen der linearen Algebra::
 
 Tensoren
-* Introduction to itensor::
-* Functions and Variables for itensor::
-* Introduction to ctensor::
-* Functions and Variables for ctensor::
-* Introduction to atensor::
-* Functions and Variables for atensor::
+* Tensorpakete in Maxima::
+* Paket itensor::
+* Paket ctensor::
+* Paket atensor::
 
 Zahlentheorie
 * Funktionen und Variablen der Zahlentheorie::
 
 Spezielle Funktionen
 * Einf@"uhrung f@"ur spezielle Funktionen::
-* Besselfunktionen und verwandte Funktionen::
+* Bessel-Funktionen und verwandte Funktionen::
 * Gammafunktionen und verwandte Funktionen::
 * Exponentielle Integrale::
 * Fehlerfunktionen::
 * Elliptische Funktionen und Integrale::
 * Hypergeometrische Funktionen::
-* Funktionen und Variablen f@"ur spezielle Funktionen::
+* Weitere spezielle Funktionen::
 
-Fouriertransformationen
-* Introduction to fast Fourier transform::     
-* Functions and Variables for fast Fourier transform::
-* Introduction to Fourier series::
-* Functions and Variables for Fourier series::
-
-Laufzeitumgebung
-* Einf@"uhrung in die Laufzeitumgebung::
-* Interrupts::
-* Funktionen und Variablen der Laufzeitumgebung::
+Fourier-Transformationen
+* Einf@"uhrung in die schnelle Fourier-Transformation::
+* Funktionen und Variablen f@"ur die schnelle Fourier-Transformation::
+* Einf@"uhrung in Fourierreihen::
+* Funktionen und Variablen f@"ur Fourierreihen::
 
 Muster und Regeln
 * Einf@"uhrung in Muster und Regeln::
 * Funktionen und Variablen f@"ur Muster und Regeln::
 
 Funktionsdefinitionen
-* Einf@"uhrung in Funktionsdefinitionen::
 * Funktionen::                    
 * Makros::                      
 * Funktionen und Variablen f@"ur Funktionsdefinitionen::
+
+Laufzeitumgebung
+* Initialisierung von Maxima::
+* Interrupts::
+* Funktionen und Variablen der Laufzeitumgebung::
 
 Programmierung
 * Lisp und Maxima::
@@ -419,6 +419,9 @@ asympa
 
 augmented_lagrangian
 * Functions and Variables for augmented_lagrangian::
+
+bernstein
+* Functions and Variables for Bernstein::
 
 bode
 * Functions and Variables for bode::
@@ -527,8 +530,8 @@ makeOrders
 * Functions and Variables for makeOrders::
 
 mnewton
-* Introduction to mnewton::
-* Functions and Variables for mnewton::
+* Einf@"uhrung in mnewton::
+* Funktionen und Variablen f@"ur mnewton::
 
 numericalio
 * Introduction to numericalio::
@@ -586,6 +589,9 @@ symmetries
 * Introduction to Symmetries::
 * Functions and Variables for Symmetries::
 
+to_poly_solve
+* Functions and Variables for to_poly_solve::
+
 unit
 * Introduction to Units::       
 * Functions and Variables for Units::
@@ -617,19 +623,19 @@ Glossar
 @chapter Hilfe
 @include Help.de.texi
 
-@node Kommandozeile, Datentypen und -strukturen, Hilfe, Top
+@node Kommandozeile, Datentypen und Strukturen, Hilfe, Top
 @chapter Kommandozeile
 @include Command.de.texi
 
-@node Datentypen und -strukturen, Ausdr@"ucke, Kommandozeile, Top
-@chapter Datentypen und -strukturen
+@node Datentypen und Strukturen, Ausdr@"ucke, Kommandozeile, Top
+@chapter Datentypen und Strukturen
 @include DataTypes.de.texi
 @include Constants.de.texi
 @include Lists.de.texi
 @include Arrays.de.texi
 @include Defstruct.de.texi
 
-@node Ausdr@"ucke, Operatoren, Datentypen und -strukturen, Top
+@node Ausdr@"ucke, Operatoren, Datentypen und Strukturen, Top
 @chapter Ausdr@"ucke
 @include Expressions.de.texi
 
@@ -660,10 +666,6 @@ Glossar
 @node Eingabe und Ausgabe, Mengen, Grafische Darstellung, Top
 @chapter Eingabe und Ausgabe
 @include Input.de.texi
-
-@c @node Listen, Mengen, Eingabe und Ausgabe, Top
-@c @chapter Listen
-@c @include Lists.de.texi
 
 @node Mengen, Summen Produkte und Reihen, Eingabe und Ausgabe, Top
 @chapter Mengen
@@ -699,31 +701,27 @@ Glossar
 @chapter Zahlentheorie
 @include Number.de.texi
 
-@node Spezielle Funktionen, Fouriertransformationen, Zahlentheorie, Top
+@node Spezielle Funktionen, Fourier-Transformationen, Zahlentheorie, Top
 @chapter Spezielle Funktionen
 @include Special.de.texi
 
-@node Fouriertransformationen, Laufzeitumgebung, Spezielle Funktionen, Top
-@chapter Fouriertransformationen
+@node Fourier-Transformationen, Muster und Regeln, Spezielle Funktionen, Top
+@chapter Fourier-Transformationen
 @include Numerical.de.texi
 
-@c @node Number Theory, Symmetries, Series, Top
-@c @chapter Number Theory
-@c @include Number.texi
-
-@node Laufzeitumgebung, Muster und Regeln, Fouriertransformationen, Top
-@chapter Laufzeitumgebung
-@include Runtime.de.texi
-
-@node Muster und Regeln, Funktionsdefinitionen, Laufzeitumgebung, Top
+@node Muster und Regeln, Funktionsdefinitionen, Fourier-Transformationen, Top
 @chapter Muster und Regeln
 @include Rules.de.texi
 
-@node Funktionsdefinitionen, Programmierung, Muster und Regeln, Top
+@node Funktionsdefinitionen, Laufzeitumgebung, Muster und Regeln, Top
 @chapter Funktionsdefinitionen
 @include Function.de.texi
 
-@node Programmierung, @"Ubersetzer, Funktionsdefinitionen, Top
+@node Laufzeitumgebung, Programmierung, Funktionsdefinitionen, Top
+@chapter Laufzeitumgebung
+@include Runtime.de.texi
+
+@node Programmierung, @"Ubersetzer, Laufzeitumgebung, Top
 @chapter Programmierung
 @include Program.de.texi
 
@@ -753,11 +751,15 @@ Glossar
 @chapter asympa
 @include asympa.de.texi
 
-@node augmented_lagrangian, bode, asympa, Top
+@node augmented_lagrangian, bernstein, asympa, Top
 @chapter augmented_lagrangian
 @include augmented_lagrangian.de.texi
 
-@node bode, cobyla, augmented_lagrangian, Top
+@node bernstein, bode, augmented_lagrangian, Top
+@chapter bernstein
+@include bernstein.de.texi
+
+@node bode, cobyla, bernstein, Top
 @chapter bode
 @include bode.de.texi
 
@@ -909,11 +911,15 @@ Glossar
 @chapter stringproc
 @include stringproc.de.texi
 
-@node symmetries, unit, stringproc, Top
+@node symmetries, to_poly_solve, stringproc, Top
 @chapter symmetries
 @include symmetries.de.texi
 
-@node unit, zeilberger, symmetries, Top
+@node to_poly_solve, unit, symmetries, Top
+@chapter to_poly_solve
+@include to_poly_solve.de.texi
+
+@node unit, zeilberger, to_poly_solve, Top
 @chapter unit
 @include unit.de.texi
 

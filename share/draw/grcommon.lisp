@@ -1,6 +1,6 @@
 ;;;                 COPYRIGHT NOTICE
 ;;;  
-;;;  Copyright (C) 2007-2010 Mario Rodriguez Riotorto
+;;;  Copyright (C) 2007-2011 Mario Rodriguez Riotorto
 ;;;  
 ;;;  This program is free software; you can redistribute
 ;;;  it and/or modify it under the terms of the
@@ -24,6 +24,11 @@
 
 ($put '$grcommon 1 '$version)
 
+;; Possible draw renderers:
+;;      gnuplot_pipes (default)
+;;      gnuplot
+;;      vtk
+(defvar $draw_renderer '$gnuplot_pipes)
 
 (defvar $draw_use_pngcairo nil "If true, use pngcairo terminal when png is requested.")
 
@@ -159,6 +164,7 @@
       (gethash '$filled_func *gr-options*)     nil         ; false, true (y axis) or an expression
       (gethash '$xaxis_secondary *gr-options*) nil
       (gethash '$yaxis_secondary *gr-options*) nil
+      (gethash '$draw_realpart *gr-options*)   t
 
       ; transformation option
       (gethash '$transform *gr-options*) '$none
@@ -168,6 +174,7 @@
       (gethash '$yv_grid *gr-options*)        30
       (gethash '$surface_hide *gr-options*)   nil
       (gethash '$enhanced3d *gr-options*)     '$none
+      (gethash '$wired_surface *gr-options*)  nil
       (gethash '$contour *gr-options*)        '$none  ; other options are: $base, $surface, $both and $map
       (gethash '$contour_levels *gr-options*) 5       ; 1-50, [lowest_level,step,highest_level] or {z1,z2,...}
       (gethash '$colorbox *gr-options*)       t       ; in pm3d mode, always show colorbox
@@ -332,8 +339,8 @@
 
 (defun update-terminal (val)
   (let ((terms '($screen $png $pngcairo $jpg $gif $eps $eps_color $svg
-                 $pdf $pdfcairo $wxt $animated_gif $aquaterm
-                 $tiff $vrml $obj $pnm)))
+                 $dumb $dumb_file $pdf $pdfcairo $wxt $animated_gif
+                 $aquaterm $tiff $vrml $obj $pnm)))
      (cond
        ((member val terms)
           (when (and (eq val '$png) $draw_use_pngcairo)
@@ -678,7 +685,7 @@
          ($dots     (setf (gethash opt *gr-options*) 0))
          ($solid    (setf (gethash opt *gr-options*) 1))
          ($dashes   (setf (gethash opt *gr-options*) 2))
-         ($dot_dash (setf (gethash opt *gr-options*) 3))
+         ($dot_dash (setf (gethash opt *gr-options*) 6))
          ($tube     (setf (gethash opt *gr-options*) -8))
          (otherwise  (merror "draw: illegal line type: ~M" val) )))
     ((and ($listp val)
@@ -795,7 +802,7 @@
         $axis_right $axis_3d $surface_hide $xaxis $yaxis $zaxis $unit_vectors
         $xtics_rotate $ytics_rotate $xtics_secondary_rotate $ytics_secondary_rotate
         $ztics_rotate $xtics_axis $ytics_axis $xtics_secondary_axis
-        $ytics_secondary_axis $ztics_axis) ; true or false
+        $ytics_secondary_axis $ztics_axis $draw_realpart $wired_surface) ; true or false
           (update-boolean-option opt val))
       ($filled_func  ; true, false or an expression
          (setf (gethash opt *gr-options*) val))
@@ -952,6 +959,12 @@
         (update-dimensions (list '(mlist) (first (gethash '$dimensions *gr-options*)) (* 100 val))))
 
       (otherwise (merror "draw: unknown option ~M " opt))  ) )
+
+
+
+
+
+
 
 
 

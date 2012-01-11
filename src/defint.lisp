@@ -335,6 +335,15 @@ in the interval of integration.")
 			  (t (intcv1 d ind nv))))
 		   (t ()))))))
 
+;; test whether fun2 is inverse of fun1 at val
+(defun test-inverse (fun1 var1 fun2 var2 val)
+  (let* ((out1 (let ((var var1))
+		 (no-err-sub val fun1)))
+	 (out2 (let ((var var2))
+		 (no-err-sub out1 fun2))))
+    (alike1 val out2)))
+
+;; integration change of variable
 (defun intcv (nv ind flag)
   (let ((d (bx**n+a nv))
 	(*roots ())  (*failures ())  ($breakup ()))
@@ -360,8 +369,13 @@ in the interval of integration.")
 		 (t
 		  (putprop 'yx t 'internal);; keep var from appearing in questions to user
 		  (solve (m+t 'yx (m*t -1 nv)) var 1.)
-		  (cond (*roots
-			 (setq d (caddar *roots))
+		  (cond ((setq d	;; look for root that is inverse of nv
+			       (do* ((roots *roots (cddr roots))
+				     (root (caddar roots) (caddar roots)))
+				    ((null root) nil)
+				    (if (or (real-infinityp ll)
+					    (test-inverse nv var root 'yx ll))
+					(return root))))
 			 (cond (flag (intcv2 d ind nv))
 			       (t (intcv1 d ind nv))))
 			(t ()))))))))
@@ -863,28 +877,83 @@ in the interval of integration.")
 	  ((eq a '$neg)  -1)
 	  (t 1.))))
 
+;; Substitute a and b into integral e
+;;
+;; Looks for discontinuties in integral, and works around them.
+;; For example, in  
+;;
+;; integrate(x^(2*n)*exp(-(x)^2),x)    ==>
+;; -gamma_incomplete((2*n+1)/2,x^2)*x^(2*n+1)*abs(x)^(-2*n-1)/2
+;; 
+;; the integral has a discontinuity at x=0.
+;;
+(defun intsubs (e a b)
+  (let ((edges (cond ((not $intanalysis)
+		      '$no)		;don't do any checking.
+		    (t (discontinuities-in-interval 
+			(let (($algebraic t)) 
+			  (sratsimp e))
+			var a b)))))
+
+    (cond ((or (eq edges '$no)
+	       (eq edges '$unknown))
+	   (whole-intsubs e a b))
+	  (t
+	   (do* ((l edges (cdr l))
+		 (total nil)
+		 (a1 (car l) (car l))
+		 (b1 (cadr l) (cadr l)))
+		((null (cdr l)) (if (every (lambda (x) x) total)
+				    (m+l total)))
+		(push
+		 (whole-intsubs e a1 b1)
+		 total))))))
+
+;; look for terms with a negative exponent
+(defun discontinuities-denom (exp)
+  (cond ((atom exp) 1)
+	((eq (caar exp) 'mtimes)
+	 (m*l (mapcar #'discontinuities-denom (cdr exp))))
+	((and (eq (caar exp) 'mexpt)
+	      (eq ($sign (caddr exp)) '$neg))
+	 (m^ (cadr exp) (m- (caddr exp))))
+	(t 1)))
+
+;; returns list of places where exp might be discontinuous in var.
+;; list begins with ll and ends with ul, and include any values between
+;; ll and ul.
+;; return '$no or '$unknown if no discontinuities found.
+(defun discontinuities-in-interval (exp var ll ul)
+  (let* ((denom (discontinuities-denom exp))
+	 (roots (real-roots denom var)))
+    (cond ((eq roots '$failure)
+	   '$unknown)
+	  ((eq roots '$no)
+	   '$no)
+	  (t (do ((dummy roots (cdr dummy))
+		  (pole-list nil))
+		 ((null dummy)
+		  (cond (pole-list
+			 (append (list ll)
+				 (sortgreat pole-list)
+				 (list ul)))
+			(t '$no)))
+		 (let ((soltn (caar dummy)))
+		   ;; (multiplicity (cdar dummy)) ;; not used
+		   (if (strictly-in-interval soltn ll ul)
+		       (push soltn pole-list))))))))
+
 
 ;; Carefully substitute the integration limits A and B into the
 ;; expression E.
-(defun intsubs (e a b)
+(defun whole-intsubs (e a b)
   (cond ((easy-subs e a b))
 	(t (setq *current-assumptions*
 		 (make-defint-assumptions 'ask)) ;get forceful!
-	   (let ((generate-atan2 ())  ($algebraic t)
-		 (rpart ())  (ipart ()))
-	     (desetq (rpart . ipart)
-		     (cond ((not (free e '$%i))
-			    (trisplit e))
-			   (t (cons e 0))))
-	     (cond ((not (equal (sratsimp ipart) 0))
-		    (let ((rans (or (limit-subs rpart a b)
-				    (same-sheet-subs rpart a b)))
-			  (ians (limit-subs ipart a b)))
-		      (if (and rans ians)
-			  (m+ rans (m* '$%i ians)))))
-		   (t (setq rpart (sratsimp rpart))
-		      (cond ((limit-subs rpart a b))
-			    (t (same-sheet-subs rpart a b)))))))))
+	   (let (($algebraic t))
+	     (setq e (sratsimp e))
+	     (cond ((limit-subs e a b))
+		   (t (same-sheet-subs e a b)))))))
 
 ;; Try easy substitutions.  Return NIL if we can't.
 (defun easy-subs (e ll ul)
@@ -929,8 +998,8 @@ in the interval of integration.")
 		 (a2 ($limit e var ul '$minus)))
 	     (cond ((member a1 '($inf $minf $infinity ) :test #'eq)
 		    (cond ((member a2 '($inf $minf $infinity) :test #'eq)
-			   (cond ((eq a2 a1)  (diverg))
-				 (t ())))
+			   (cond ((eq a2 a1)  ())
+				 (t (diverg))))
 			  (t (diverg))))
 		   ((member a2 '($inf $minf $infinity) :test #'eq)  (diverg))
 		   ((or (member a1 '($und $ind) :test #'eq)
@@ -2047,7 +2116,9 @@ in the interval of integration.")
 ;;;because of various assumptions made.
 (defun sin-cos-intsubs (exp var ll ul)
   (cond ((mplusp exp)
-	 (m+l (mapcar #'sin-cos-intsubs1 (cdr exp))))
+	 (let ((l (mapcar #'sin-cos-intsubs1 (cdr exp))))
+	   (if (not (some #'null l))
+	       (m+l l))))
 	(t (sin-cos-intsubs1 exp))))
 
 (defun sin-cos-intsubs1 (exp)
@@ -2409,10 +2480,8 @@ in the interval of integration.")
 	   ;; Ok, we have cos(b*x^n) or sin(b*x^n), and we set e = (n
 	   ;; b)
 	   (cond ((equal (car e) 1.)
-		  ;; n = 1.  Give up.  (Why IND?  Why not divergent or
-		  ;; something else?  Why is this case different from
-		  ;; the case below of n <= 1?)
-		  '$ind)
+		  ;; n = 1.  Give up.  (Why not divergent?)
+		  nil)
 		 ((zerop (setq s (let ((sign ($asksign (cadr e))))
 				   (cond ((eq sign '$pos) 1)
 					 ((eq sign '$neg) -1)
@@ -3455,6 +3524,15 @@ in the interval of integration.")
       (let ((lesseq-ul (ask-greateq ul place))
 	    (greateq-ll (ask-greateq place ll)))
 	(if (and (eq lesseq-ul '$yes) (eq greateq-ll '$yes)) '$yes '$no))))
+
+;; returns true or nil
+(defun strictly-in-interval (place ll ul)
+  ;; real values for ll and ul; place can be imaginary.
+  (and (equal ($imagpart place) 0)
+       (or (eq ul '$inf) 
+	   (eq ($asksign (m+ ul (m- place))) '$pos))
+       (or (eq ll '$minf) 
+	   (eq ($asksign (m+ place (m- ll))) '$pos))))
 
 (defun real-roots (exp var)
   (let (($solvetrigwarn (cond (defintdebug t) ;Rest of the code for

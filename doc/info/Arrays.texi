@@ -1,26 +1,34 @@
+@c -----------------------------------------------------------------------------
+@page
+@node Arrays, Structures, Lists, Data Types and Structures
+@section Arrays
+@c -----------------------------------------------------------------------------
 
 @menu
 * Functions and Variables for Arrays::  
 @end menu
 
+@c -----------------------------------------------------------------------------
 @node Functions and Variables for Arrays,  , Arrays, Arrays
-@section Functions and Variables for Arrays
+@subsection Functions and Variables for Arrays
+@c -----------------------------------------------------------------------------
 
-@deffn {Function} array (@var{name}, @var{dim_1}, ..., @var{dim_n})
-@deffnx {Function} array (@var{name}, @var{type}, @var{dim_1}, ..., @var{dim_n})
-@deffnx {Function} array ([@var{name_1}, ..., @var{name_m}], @var{dim_1}, ..., @var{dim_n})
+@c -----------------------------------------------------------------------------
+@anchor{array}
+@deffn  {Function} array (@var{name}, @var{dim_1}, @dots{}, @var{dim_n})
+@deffnx {Function} array (@var{name}, @var{type}, @var{dim_1}, @dots{}, @var{dim_n})
+@deffnx {Function} array ([@var{name_1}, @dots{}, @var{name_m}], @var{dim_1}, @dots{}, @var{dim_n})
 
-Creates an @math{n}-dimensional array.  
-@math{n} may be less than or equal to 5.
-The subscripts for
-the @math{i}'th dimension are the integers running from 0 to @var{dim_i}.  
+Creates an @math{n}-dimensional array.  @math{n} may be less than or equal to 5.
+The subscripts for the @math{i}'th dimension are the integers running from 0 to
+@var{dim_i}.
 
-@code{array (@var{name}, @var{dim_1}, ..., @var{dim_n})} creates a general array.
+@code{array (@var{name}, @var{dim_1}, ..., @var{dim_n})} creates a general
+array.
 
 @code{array (@var{name}, @var{type}, @var{dim_1}, ..., @var{dim_n})} creates
-an array, with elements of a specified type.
-@var{type} can be @code{fixnum} for
-integers of limited size or @code{flonum} for floating-point numbers.
+an array, with elements of a specified type.  @var{type} can be @code{fixnum}
+for integers of limited size or @code{flonum} for floating-point numbers.
 
 @code{array ([@var{name_1}, ..., @var{name_m}], @var{dim_1}, ..., @var{dim_n})}
 creates @math{m} arrays, all of the same dimensions.
@@ -45,40 +53,50 @@ array.
 @closecatbox
 @end deffn
 
-@deffn {Function} arrayapply (@var{A}, [@var{i_1}, ..., @var{i_n}])
-Evaluates @code{@var{A} [@var{i_1}, ..., @var{i_n}]},
-where @var{A} is an array and @var{i_1}, ..., @var{i_n} are integers.
+@c -----------------------------------------------------------------------------
+@anchor{arrayapply}
+@deffn {Function} arrayapply (@var{A}, [@var{i_1}, @dots{}, @var{i_n}])
 
-This is reminiscent of @code{apply}, except the first argument is an array instead of a function.
+Evaluates @code{@var{A} [@var{i_1}, ..., @var{i_n}]},
+where @var{A} is an array and @var{i_1}, @dots{}, @var{i_n} are integers.
+
+This is reminiscent of @mrefcomma{apply} except the first argument is an array
+instead of a function.
 
 @opencatbox
 @category{Expressions} @category{Arrays}
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{arrayinfo}
 @deffn {Function} arrayinfo (@var{A})
+
 Returns information about the array @var{A}.
 The argument @var{A} may be a declared array, an undeclared (hashed) array,
 an array function, or a subscripted function.
 
-For declared arrays, @code{arrayinfo} returns a list
-comprising the atom @code{declared}, the number of dimensions, and the size of each dimension.
-The elements of the array, both bound and unbound, are returned by @code{listarray}.
+For declared arrays, @code{arrayinfo} returns a list comprising the atom
+@code{declared}, the number of dimensions, and the size of each dimension.
+The elements of the array, both bound and unbound, are returned by
+@code{listarray}.
 
-For undeclared arrays (hashed arrays),
-@code{arrayinfo} returns a list comprising the atom @code{hashed}, the number of subscripts,
+For undeclared arrays (hashed arrays), @code{arrayinfo} returns a list
+comprising the atom @code{hashed}, the number of subscripts,
 and the subscripts of every element which has a value.
 The values are returned by @code{listarray}.
 
-For array functions,
-@code{arrayinfo} returns a list comprising the atom @code{hashed}, the number of subscripts,
+For array functions, @code{arrayinfo} returns a list comprising the atom
+@code{hashed}, the number of subscripts,
 and any subscript values for which there are stored function values.
 The stored function values are returned by @code{listarray}.
 
-For subscripted functions,
-@code{arrayinfo} returns a list comprising the atom @code{hashed}, the number of subscripts,
+For subscripted functions, @code{arrayinfo} returns a list comprising the atom
+@code{hashed}, the number of subscripts,
 and any subscript values for which there are lambda expressions.
 The lambda expressions are returned by @code{listarray}.
+
+See also @mrefdot{listarray}
 
 Examples:
 
@@ -227,13 +245,15 @@ Examples:
 @closecatbox
 @end deffn
 
-@deffn {Function} arraymake (@var{A}, [@var{i_1}, ..., @var{i_n}])
+@c -----------------------------------------------------------------------------
+@anchor{arraymake}
+@deffn {Function} arraymake (@var{A}, [@var{i_1}, @dots{}, @var{i_n}])
+
 Returns the expression @code{@var{A}[@var{i_1}, ..., @var{i_n}]}.
 The result is an unevaluated array reference.
 
-@code{arraymake} is reminiscent of @code{funmake},
-except the return value is an unevaluated array reference
-instead of an unevaluated function call.
+@code{arraymake} is reminiscent of @mrefcomma{funmake} except the return value
+is an unevaluated array reference instead of an unevaluated function call.
 
 Examples:
 @c ===beg===
@@ -322,18 +342,21 @@ Examples:
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{arrays}
 @defvr {System variable} arrays
 Default value: @code{[]}
 
 @code{arrays} is a list of arrays that have been allocated.
-These comprise arrays declared by @code{array},
-hashed arrays constructed by implicit definition (assigning something to an array element),
+These comprise arrays declared by @code{array}, hashed arrays constructed by
+implicit definition (assigning something to an array element),
 and array functions defined by @code{:=} and @code{define}.
-Arrays defined by @code{make_array} are not included.
+Arrays defined by @mref{make_array} are not included.
 
 See also
-@code{array}, @code{arrayapply}, @code{arrayinfo}, @code{arraymake}, 
-@code{fillarray}, @code{listarray}, and @code{rearray}.
+@mrefcomma{array} @mrefcomma{arrayapply} @mrefcomma{arrayinfo}@w{}
+@mrefcomma{arraymake} @mrefcomma{fillarray} @mrefcomma{listarray} and
+@mrefdot{rearray}
 @c IS THIS AN EXHAUSTIVE LIST ??
 
 Examples:
@@ -374,23 +397,12 @@ Examples:
 @opencatbox
 @category{Arrays} @category{Global variables}
 @closecatbox
-
 @end defvr
 
-@deffn {Function} bashindices (@var{expr})
-Transforms the expression @var{expr} by giving each
-summation and product a unique index. This gives @code{changevar} greater
-precision when it is working with summations or products.  The form of
-the unique index is @code{j@var{number}}. The quantity @var{number} is determined by
-referring to @code{gensumnum}, which can be changed by the user.  For
-example, @code{gensumnum:0$} resets it.
-
-@opencatbox
-@category{Sums and products}
-@closecatbox
-@end deffn
-
+@c -----------------------------------------------------------------------------
+@anchor{fillarray}
 @deffn {Function} fillarray (@var{A}, @var{B})
+
 Fills array @var{A} from @var{B}, which is a list or an array.
 
 If a specific type was declared for @var{A} when it was created,
@@ -462,6 +474,7 @@ the extra elements are ignored.
 @end example
 
 Multple-dimension arrays are filled in row-major order.
+
 @c ===beg===
 @c a3 : make_array (fixnum, 2, 5);
 @c fillarray (a3, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
@@ -492,20 +505,24 @@ Multple-dimension arrays are filled in row-major order.
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{listarray}
 @deffn {Function} listarray (@var{A})
+
 Returns a list of the elements of the array @var{A}.
 The argument @var{A} may be a declared array, an undeclared (hashed) array,
 an array function, or a subscripted function.
 
 Elements are listed in row-major order.
-That is, elements are sorted according to the first index, then according to the second index, and so on.
-The sorting order of index values is the same as the order established by @code{orderless}.
+That is, elements are sorted according to the first index, then according to
+the second index, and so on.  The sorting order of index values is the same as
+the order established by @mrefdot{orderless}
 
 For undeclared arrays, array functions, and subscripted functions,
-the elements correspond to the index values returned by @code{arrayinfo}.
+the elements correspond to the index values returned by @mrefdot{arrayinfo}
 
-Unbound elements of declared general arrays (that is, not @code{fixnum} and not @code{flonum})
-are returned as @code{#####}.
+Unbound elements of declared general arrays (that is, not @code{fixnum} and not
+@code{flonum}) are returned as @code{#####}.
 Unbound elements of declared @code{fixnum} or @code{flonum} arrays
 are returned as 0 or 0.0, respectively.
 Unbound elements of undeclared arrays, array functions,
@@ -659,18 +676,22 @@ Examples:
 @end deffn
 
 @c NEEDS CLARIFICATION
-@deffn {Function} make_array (@var{type}, @var{dim_1}, ..., @var{dim_n})
+
+@c -----------------------------------------------------------------------------
+@anchor{make_array}
+@deffn {Function} make_array (@var{type}, @var{dim_1}, @dots{}, @var{dim_n})
+
 Creates and returns a Lisp array.  @var{type} may
 be @code{any}, @code{flonum}, @code{fixnum}, @code{hashed} or 
 @code{functional}.
 There are @math{n} indices,
 and the @math{i}'th index runs from 0 to @math{@var{dim_i} - 1}.
 
-The advantage of @code{make_array} over @code{array} is that the return value doesn't have a
-name, and once a pointer to it goes away, it will also go away.
+The advantage of @code{make_array} over @mref{array} is that the return value
+doesn't have a name, and once a pointer to it goes away, it will also go away.
 For example, if @code{y: make_array (...)} then @code{y} points to an object 
 which takes up space, but after @code{y: false}, @code{y} no longer
-points to that object, so the object can be garbage collected.  
+points to that object, so the object can be garbage collected.
 
 @c 'FUNCTIONAL ARGUMENT IN MAKE_ARRAY APPEARS TO BE BROKEN
 @c EVEN AFTER READING THE CODE (SRC/AR.LISP) I CAN'T TELL HOW THIS IS SUPPOSED TO WORK
@@ -682,6 +703,7 @@ points to that object, so the object can be garbage collected.
 @c @code{make_array} to generate the "memory" for the array function object.
 
 Examples:
+
 @c ===beg===
 @c A1 : make_array (fixnum, 10);
 @c A1 [8] : 1729;
@@ -758,8 +780,12 @@ Examples:
 @end deffn
 
 @c DOES THIS MODIFY A OR DOES IT CREATE A NEW ARRAY ??
-@deffn {Function} rearray (@var{A}, @var{dim_1}, ..., @var{dim_n})
-Changes the dimensions of an array.  
+
+@c -----------------------------------------------------------------------------
+@anchor{rearray}
+@deffn {Function} rearray (@var{A}, @var{dim_1}, @dots{}, @var{dim_n})
+
+Changes the dimensions of an array.
 The new array will be filled with the elements of the old one in
 row-major order.  If the old array was too small, 
 the remaining elements are filled with
@@ -772,13 +798,16 @@ changed.
 @closecatbox
 @end deffn
 
-@deffn {Function} remarray (@var{A_1}, ..., @var{A_n})
+@c -----------------------------------------------------------------------------
+@anchor{remarray}
+@deffn  {Function} remarray (@var{A_1}, @dots{}, @var{A_n})
 @deffnx {Function} remarray (all)
-Removes arrays and array associated
-functions and frees the storage occupied.
-The arguments may be declared arrays, undeclared (hashed) arrays, array functions, and subscripted functions.
 
-@code{remarray (all)} removes all items in the global list @code{arrays}.
+Removes arrays and array associated functions and frees the storage occupied.
+The arguments may be declared arrays, undeclared (hashed) arrays, array
+functions, and subscripted functions.
+
+@code{remarray (all)} removes all items in the global list @mrefdot{arrays}
 
 @c WHAT DOES THIS MEAN EXACTLY ??
 It may be necessary to use this function if it is
@@ -793,13 +822,16 @@ desired to redefine the values in a hashed array.
 @closecatbox
 @end deffn
 
+@c -----------------------------------------------------------------------------
+@anchor{subvar}
 @deffn {Function} subvar (@var{x}, @var{i})
+
 Evaluates the subscripted expression @code{@var{x}[@var{i}]}.
 
 @code{subvar} evaluates its arguments.
 
-@code{arraymake (@var{x}, [@var{i}]} constructs the expression @code{@var{x}[@var{i}]},
-but does not evaluate it.
+@code{arraymake (@var{x}, [@var{i}]} constructs the expression
+@code{@var{x}[@var{i}]}, but does not evaluate it.
 
 Examples:
 
@@ -841,25 +873,47 @@ Examples:
 @closecatbox
 @end deffn
 
-@c THIS IS REALLY CONFUSING
-@defvr {Option variable} use_fast_arrays
-- if @code{true} then only two types of arrays are recognized.  
+@c NEEDS EXPANSION AND EXAMPLES
 
-1) The art-q array (t in Common Lisp) which may have several dimensions
+@c -----------------------------------------------------------------------------
+@anchor{subvarp}
+@deffn {Function} subvarp (@var{expr})
+
+Returns @code{true} if @var{expr} is a subscripted variable, for example
+@code{a[i]}.
+
+@opencatbox
+@category{Predicate functions}
+@closecatbox
+@end deffn
+
+@c THIS IS REALLY CONFUSING
+
+@c -----------------------------------------------------------------------------
+@anchor{use_fast_arrays}
+@defvr {Option variable} use_fast_arrays
+
+If @code{true} then only two types of arrays are recognized:
+
+@enumerate
+@item
+The art-q array (t in Common Lisp) which may have several dimensions
 indexed by integers, and may hold any Lisp or Maxima object as an
 entry.  To construct such an array, enter @code{a:make_array(any,3,4);} 
 then @code{a} will have as value, an array with twelve slots, and the 
 indexing is zero based.
 
-2) The Hash_table array which is the default type of array created if one
+@item
+The Hash_table array which is the default type of array created if one
 does @code{b[x+1]:y^2} (and @code{b} is not already an array, a list, or a
 matrix -- if it were one of these an error would be caused since
 @code{x+1} would not be a valid subscript for an art-q array, a list or
-a matrix). Its indices (also known as keys) may be any object.  
-It only takes one key at a time (@code{b[x+1,u]:y} would ignore the @code{u}). 
+a matrix).  Its indices (also known as keys) may be any object.
+It only takes one key at a time (@code{b[x+1,u]:y} would ignore the @code{u}).
 Referencing is done by @code{b[x+1] ==> y^2}.  Of course the key may be
 a list, e.g. @code{b[[x+1,u]]:y} would be valid.  This is incompatible 
 with the old Maxima hash arrays, but saves consing.
+@end enumerate
 
 An advantage of storing the arrays as values of the symbol is that the
 usual conventions about local variables of a function apply to arrays as
@@ -871,5 +925,5 @@ translated and compiled code set @code{translate_fast_arrays} to be
 @opencatbox
 @category{Arrays} @category{Global flags}
 @closecatbox
-
 @end defvr
+

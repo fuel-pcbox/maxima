@@ -77,16 +77,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar $factorial_expand nil)
-(defvar $beta_expand nil)
+(defmvar $factorial_expand nil)
+(defmvar $beta_expand nil)
 
-(defvar $erf_representation nil
+(defmvar $erf_representation nil
   "When T erfc, erfi and erf_generalized are transformed to erf.")
 
-(defvar $erf_%iargs nil
+(defmvar $erf_%iargs nil
   "When T erf and erfi simplifies for an imaginary argument.")
 
-(defvar $hypergeometric_representation nil
+(defmvar $hypergeometric_representation nil
   "When T a transformation to a hypergeometric representation is done.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -295,7 +295,7 @@
      (expt
       (/ 2 pival)
       (/ (- 1 (cos (* pival z))) 4))
-     (expt 2d0 (/ z 2))
+     (expt 2e0 (/ z 2))
      (gamma-lanczos (+ 1 (/ z 2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -728,7 +728,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defvar *gamma-incomplete-maxit* 10000)
-(defvar *gamma-incomplete-eps* (* 2 double-float-epsilon))
+(defvar *gamma-incomplete-eps* (* 2 flonum-epsilon))
 (defvar *gamma-incomplete-min* 1.0e-32)
 
 (defvar *gamma-radius* 1.0
@@ -1900,7 +1900,33 @@
       ((mexpt) $%e ((mtimes) -1 ((mexpt) z2 2)))))
   grad)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; ----------------------------------------------------------------------------
+
+(defprop %erf_generalized simplim%erf_generalized simplim%function)
+
+(defun simplim%erf_generalized (expr var val)
+  ;; Look for the limit of the arguments.
+  (let ((z1 (limit (cadr expr) var val 'think))
+        (z2 (limit (caddr expr) var val 'think)))
+    (cond
+      ;; Handle infinities at this place.
+      ((or (eq z2 '$inf)
+           (alike1 z2 '((mtimes) -1 $minf)))
+       (sub 1 (take '(%erf) z1)))
+      ((or (eq z2 '$minf)
+           (alike1 z2 '((mtimes) -1 $inf)))
+       (sub (mul -1 (take '(%erf) z1)) 1))
+      ((or (eq z1 '$inf)
+           (alike1 z1 '((mtimes) -1 $minf)))
+       (sub (take '(%erf) z2) 1))
+      ((or (eq z1 '$minf)
+           (alike1 z1 '((mtimes) -1 $inf)))
+       (add (take '(%erf) z2) 1))
+      (t
+       ;; All other cases are handled by the simplifier of the function.
+       (simplify (list '(%erf_generalized) z1 z2))))))
+
+;;; ----------------------------------------------------------------------------
 
 (defun simp-erf-generalized (expr ignored simpflag)
   (declare (ignore ignored))
@@ -1908,16 +1934,24 @@
   (let ((z1 (simpcheck (cadr expr) simpflag))
         (z2 (simpcheck (caddr expr) simpflag)))
     (cond
-
+      
       ;; Check for specific values
-
+      
       ((and (zerop1 z1) (zerop1 z2)) 0)
-      ((zerop1 z1) (simplify (list '(%erf) z2)))
-      ((zerop1 z2) (mul -1 (simplify (list '(%erf) z1))))
-      ((eq z2 '$inf) (sub 1 (simplify (list '(%erf) z1))))
-      ((eq z2 '$minf) (sub (mul -1 (simplify (list '(%erf) z1))) 1))
-      ((eq z1 '$inf) (sub (simplify (list '(%erf) z2)) 1))
-      ((eq z1 '$minf) (add (simplify (list '(%erf) z2)) 1))
+      ((zerop1 z1) (take '(%erf) z2))
+      ((zerop1 z2) (mul -1 (take '(%erf) z1)))
+      ((or (eq z2 '$inf)
+           (alike1 z2 '((mtimes) -1 $minf)))
+       (sub 1 (take '(%erf) z1)))
+      ((or (eq z2 '$minf)
+           (alike1 z2 '((mtimes) -1 $inf)))
+       (sub (mul -1 (take '(%erf) z1)) 1))
+      ((or (eq z1 '$inf)
+           (alike1 z1 '((mtimes) -1 $minf)))
+       (sub (take '(%erf) z2) 1))
+      ((or (eq z1 '$minf)
+           (alike1 z1 '((mtimes) -1 $inf)))
+       (add (take '(%erf) z2) 1))
 
       ;; Check for numerical evaluation. Use erf(z1,z2) = erf(z2)-erf(z1)
 
@@ -2003,7 +2037,22 @@
      ((mtimes) z ((%erfc) z))))
   integral)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; ----------------------------------------------------------------------------
+
+;(defprop %erfc simplim%erfc simplim%function)
+;
+;(defun simplim%erfc (expr var val)
+;  ;; Look for the limit of the arguments.
+;  (let ((z (limit (cadr expr) var val 'think)))
+;    (cond
+;      ;; Handle infinities at this place.
+;      ((eq z '$inf) 0)
+;      ((eq z '$minf) 2)
+;      (t
+;       ;; All other cases are handled by the simplifier of the function.
+;       (simplify (list '(%erfc) z))))))
+
+;;; ----------------------------------------------------------------------------
 
 (defun simp-erfc (expr z simpflag)
   (oneargcheck expr)
@@ -2117,7 +2166,22 @@
      ((mtimes) z ((%erfi) z))))
   integral)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; ----------------------------------------------------------------------------
+
+(defprop %erfi simplim%erfi simplim%function)
+
+(defun simplim%erfi (expr var val)
+  ;; Look for the limit of the arguments.
+  (let ((z (limit (cadr expr) var val 'think)))
+    (cond
+      ;; Handle infinities at this place.
+      ((eq z '$inf) '$inf)
+      ((eq z '$minf) '$minf)
+      (t
+       ;; All other cases are handled by the simplifier of the function.
+       (simplify (list '(%erfi) z))))))
+
+;;; ----------------------------------------------------------------------------
 
 (defun simp-erfi (expr z simpflag)
   (oneargcheck expr)
@@ -2592,12 +2656,11 @@
                      (power '$%pi '((rat simp) 1 2)) z)))))))
 
     ($hypergeometric_representation
-      (mul 
-        (div (mul '$%pi (power z 3)) 6)
-        (list '(%hypergeometric simp)
-          (list '(mlist simp) '((rat simp) 3 4))
-          (list '(mlist simp) '((rat simp) 3 2) '((rat simp) 7 4))
-          (mul -1 (div (mul (power '$%pi 2) (power z 4)) 16)))))
+      (mul (div (mul '$%pi (power z 3)) 6)
+           (take '($hypergeometric)
+                 (list '(mlist) (div 3 4))
+                 (list '(mlist) (div 3 2) (div 7 4))
+                 (mul -1 (div (mul (power '$%pi 2) (power z 4)) 16)))))
 
     (t
      (eqtest (list '(%fresnel_s) z) expr))))
@@ -2732,10 +2795,10 @@
 
     ($hypergeometric_representation
       (mul z
-        (list '(%hypergeometric simp)
-          (list '(mlist simp) '((rat simp) 1 4))
-          (list '(mlist simp) '((rat simp) 1 2) '((rat simp) 5 4))
-          (mul -1 (div (mul (power '$%pi 2) (power z 4)) 16)))))
+           (take '($hypergeometric)
+                 (list '(mlist) (div 1 4))
+                 (list '(mlist) (div 1 2) (div 5 4))
+                 (mul -1 (div (mul (power '$%pi 2) (power z 4)) 16)))))
 
     (t
       (eqtest (list '(%fresnel_c) z) expr))))
@@ -2743,7 +2806,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defvar *fresnel-maxit* 1000)
-(defvar *fresnel-eps*   (* 2 double-float-epsilon))
+(defvar *fresnel-eps*   (* 2 flonum-epsilon))
 (defvar *fresnel-min*   1e-32)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
